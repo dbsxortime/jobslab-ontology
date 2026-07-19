@@ -1,0 +1,12 @@
+{
+  "name": "jobslab-ontology",
+  "version": "1.0.0",
+  "description": "업무 온톨로지 플랫폼 — B2B 데모 & 인터뷰 가이드",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

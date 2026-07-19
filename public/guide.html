@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>온톨로지 인터뷰 가이드</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #FFFFFF;
+      --bg-subtle:   #FAFAFA;
+      --bg-hover:    #F4F4F4;
+      --text-1:      #111111;
+      --text-2:      #555555;
+      --text-3:      #999999;
+      --line:        rgba(0,0,0,0.07);
+      --line-2:      rgba(0,0,0,0.12);
+      --brand:       #1C2E72;
+      --brand-hover: #16255C;
+      --brand-light: #EEF2FF;
+      --brand-mid:   rgba(28,46,114,0.12);
+      --radius:      10px;
+      --shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.10);
+
+      /* Node type colors */
+      --color-A:  #2563EB; --color-A-bg: rgba(37,99,235,0.08);
+      --color-O:  #0D9488; --color-O-bg: rgba(13,148,136,0.08);
+      --color-E:  #D97706; --color-E-bg: rgba(217,119,6,0.08);
+      --color-R:  #7C3AED; --color-R-bg: rgba(124,58,237,0.08);
+      --color-RU: #16A34A; --color-RU-bg: rgba(22,163,74,0.08);
+      --color-B:  #DC2626; --color-B-bg: rgba(220,38,38,0.08);
+    }
+
+    body {
+      font-family: 'Pretendard Variable', -apple-system, sans-serif;
+      background: var(--bg-subtle);
+      color: var(--text-1);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text-1);
+    }
+    .header-brand .logo {
+      width: 28px; height: 28px;
+      background: var(--brand);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 14px; font-weight: 700;
+    }
+    .header-brand .wordmark {
+      font-size: 15px; font-weight: 600;
+    }
+    .header-sep { color: var(--text-3); font-size: 13px; }
+    .header-title { font-size: 14px; font-weight: 500; color: var(--text-2); }
+
+    .stage-bar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stage-item {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-3);
+      border: 1px solid var(--line);
+      background: var(--bg);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .stage-item.active {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+    .stage-item.done {
+      background: var(--brand-light);
+      color: var(--brand);
+      border-color: var(--brand-mid);
+    }
+    .stage-arrow { color: var(--text-3); font-size: 11px; }
+
+    /* ── Main layout ── */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* ── Chat panel ── */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 100%;
+      animation: fadeUp 0.25s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.ai { align-items: flex-start; }
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+    .avatar.ai-av { background: var(--brand); color: #fff; }
+    .avatar.user-av { background: var(--bg-hover); color: var(--text-2); }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 14px;
+      max-width: 80%;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .message.ai .bubble {
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: 4px 14px 14px 14px;
+      color: var(--text-1);
+    }
+    .message.user .bubble {
+      background: var(--brand);
+      color: #fff;
+      border-radius: 14px 4px 14px 14px;
+    }
+
+    .insight-chip {
+      margin-top: 8px;
+      padding: 6px 12px;
+      background: rgba(28,46,114,0.06);
+      border: 1px solid var(--brand-mid);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--brand);
+      display: inline-block;
+    }
+
+    .typing-indicator {
+      display: flex; gap: 4px; padding: 4px 0;
+    }
+    .typing-indicator span {
+      width: 6px; height: 6px;
+      background: var(--text-3); border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* ── Input area ── */
+    .input-area {
+      border-top: 1px solid var(--line);
+      padding: 16px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: var(--bg);
+    }
+
+    #userInput {
+      flex: 1;
+      resize: none;
+      border: 1px solid var(--line-2);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text-1);
+      background: var(--bg);
+      outline: none;
+      min-height: 42px;
+      max-height: 120px;
+      line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    #userInput:focus { border-color: var(--brand); }
+    #userInput::placeholder { color: var(--text-3); }
+
+    #sendBtn {
+      width: 42px; height: 42px; flex-shrink: 0;
+      background: var(--brand);
+      color: #fff; border: none; border-radius: 10px;
+      cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: background 0.15s;
+      font-size: 16px;
+    }
+    #sendBtn:hover { background: var(--brand-hover); }
+    #sendBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Ontology panel ── */
+    .ontology-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-subtle);
+      overflow: hidden;
+    }
+
+    .onto-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg);
+    }
+    .onto-header h2 { font-size: 14px; font-weight: 600; color: var(--text-1); }
+
+    .node-count-row {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .node-count {
+      font-size: 11px; padding: 2px 8px;
+      border-radius: 20px; font-weight: 600;
+    }
+
+    #exportBtn {
+      padding: 6px 14px;
+      background: var(--brand);
+      color: #fff; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 12px; font-weight: 500;
+      font-family: inherit;
+      transition: background 0.15s;
+      display: none;
+    }
+    #exportBtn:hover { background: var(--brand-hover); }
+
+    .onto-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .node-group {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .node-group-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      user-select: none;
+    }
+    .node-type-badge {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .node-group-label { font-size: 13px; font-weight: 600; }
+    .node-group-sublabel { font-size: 11px; color: var(--text-3); margin-left: 2px; }
+    .node-group-count {
+      margin-left: auto;
+      font-size: 11px; font-weight: 600;
+      min-width: 18px; height: 18px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 5px;
+    }
+
+    .node-list { padding: 4px 0; }
+    .node-item {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--line);
+      animation: fadeUp 0.2s ease;
+    }
+    .node-item:last-child { border-bottom: none; }
+    .node-item-id { font-size: 10px; font-weight: 700; opacity: 0.6; }
+    .node-item-name { font-size: 13px; font-weight: 500; color: var(--text-1); margin-top: 1px; }
+    .node-item-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+
+    .empty-group {
+      padding: 12px 14px;
+      font-size: 12px; color: var(--text-3);
+    }
+
+    /* Type-specific styling */
+    .type-A .node-type-badge  { background: var(--color-A-bg); color: var(--color-A); }
+    .type-A .node-group-label { color: var(--color-A); }
+    .type-A .node-group-count { background: var(--color-A-bg); color: var(--color-A); }
+    .type-A .node-item-id     { color: var(--color-A); }
+
+    .type-O .node-type-badge  { background: var(--color-O-bg); color: var(--color-O); }
+    .type-O .node-group-label { color: var(--color-O); }
+    .type-O .node-group-count { background: var(--color-O-bg); color: var(--color-O); }
+    .type-O .node-item-id     { color: var(--color-O); }
+
+    .type-E .node-type-badge  { background: var(--color-E-bg); color: var(--color-E); }
+    .type-E .node-group-label { color: var(--color-E); }
+    .type-E .node-group-count { background: var(--color-E-bg); color: var(--color-E); }
+    .type-E .node-item-id     { color: var(--color-E); }
+
+    .type-R .node-type-badge  { background: var(--color-R-bg); color: var(--color-R); }
+    .type-R .node-group-label { color: var(--color-R); }
+    .type-R .node-group-count { background: var(--color-R-bg); color: var(--color-R); }
+    .type-R .node-item-id     { color: var(--color-R); }
+
+    .type-RU .node-type-badge  { background: var(--color-RU-bg); color: var(--color-RU); }
+    .type-RU .node-group-label { color: var(--color-RU); }
+    .type-RU .node-group-count { background: var(--color-RU-bg); color: var(--color-RU); }
+    .type-RU .node-item-id     { color: var(--color-RU); }
+
+    .type-B .node-type-badge  { background: var(--color-B-bg); color: var(--color-B); }
+    .type-B .node-group-label { color: var(--color-B); }
+    .type-B .node-group-count { background: var(--color-B-bg); color: var(--color-B); }
+    .type-B .node-item-id     { color: var(--color-B); }
+
+    /* Pain score panel */
+    .pain-panel {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: none;
+    }
+    .pain-panel h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+    .pain-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .pain-row:last-child { border-bottom: none; }
+    .pain-rank { font-size: 11px; font-weight: 700; color: var(--color-B); width: 20px; }
+    .pain-name { font-size: 12px; flex: 1; }
+    .pain-score { font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+    /* Intro screen */
+    .intro-screen {
+      position: absolute; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+    .intro-card {
+      max-width: 520px; width: 100%;
+      padding: 40px;
+      text-align: center;
+    }
+    .intro-icon {
+      width: 64px; height: 64px;
+      background: var(--brand);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 28px;
+    }
+    .intro-card h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .intro-card p { font-size: 14px; color: var(--text-2); line-height: 1.7; margin-bottom: 24px; }
+    .intro-stages {
+      display: flex; gap: 8px; margin-bottom: 28px;
+      text-align: left;
+    }
+    .intro-stage {
+      flex: 1;
+      background: var(--bg-subtle);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .intro-stage-num {
+      font-size: 11px; font-weight: 700;
+      color: var(--brand); margin-bottom: 4px;
+    }
+    .intro-stage-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+    .intro-stage-desc { font-size: 11px; color: var(--text-3); line-height: 1.4; }
+
+    .intro-input-group {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-bottom: 20px; text-align: left;
+    }
+    .intro-input-group label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+    .intro-input-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      font-family: inherit; font-size: 14px;
+      color: var(--text-1); background: var(--bg);
+      outline: none; transition: border-color 0.15s;
+    }
+    .intro-input-group input:focus { border-color: var(--brand); }
+
+    .btn-start {
+      width: 100%;
+      padding: 13px;
+      background: var(--brand);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: inherit; font-size: 15px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-start:hover { background: var(--brand-hover); }
+
+    /* Completion screen */
+    .complete-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      color: #16A34A;
+      margin: 0 24px 12px;
+      text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; }
+      .ontology-panel { display: none; }
+      .stage-bar { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Intro screen -->
+  <div class="intro-screen" id="introScreen">
+    <div class="intro-card">
+      <div class="intro-icon">🗂️</div>
+      <h1>온톨로지 인터뷰</h1>
+      <p>회사 업무 구조를 대화를 통해 함께 그려갑니다.<br>
+         자유롭게 답변하시면 AI가 핵심 요소를 추출합니다.</p>
+
+      <div class="intro-stages">
+        <div class="intro-stage">
+          <div class="intro-stage-num">Stage 1</div>
+          <div class="intro-stage-name">하루 훑기</div>
+          <div class="intro-stage-desc">누가, 무슨 일을 하는지</div>
+        </div>
+        <div class="intro-stage">
+          <div class="intro-stage-num">Stage 2</div>
+          <div class="intro-stage-name">기록 추적</div>
+          <div class="intro-stage-desc">어디에 무엇을 적는지</div>
+        </div>
+        <div class="intro-stage">
+          <div class="intro-stage-num">Stage 3</div>
+          <div class="intro-stage-name">규칙 추출</div>
+          <div class="intro-stage-desc">판단 기준이 어디 있는지</div>
+        </div>
+        <div class="intro-stage">
+          <div class="intro-stage-num">Stage 4</div>
+          <div class="intro-stage-name">아픔 계량</div>
+          <div class="intro-stage-desc">시간·돈이 새는 곳</div>
+        </div>
+      </div>
+
+      <div class="intro-input-group">
+        <label>회사(또는 테넌트) 이름</label>
+        <input type="text" id="tenantInput" placeholder="예: 잡스랩, ABC 건설, 미래유통" />
+      </div>
+
+      <button class="btn-start" id="startBtn">인터뷰 시작하기</button>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div class="header">
+    <a class="header-brand" href="/">
+      <div class="logo">J</div>
+      <span class="wordmark">Jurin</span>
+    </a>
+    <span class="header-sep">/</span>
+    <span class="header-title" id="headerTenant">온톨로지 인터뷰</span>
+
+    <div class="stage-bar">
+      <div class="stage-item active" id="stageTab1">① 하루 훑기</div>
+      <div class="stage-arrow">›</div>
+      <div class="stage-item" id="stageTab2">② 기록 추적</div>
+      <div class="stage-arrow">›</div>
+      <div class="stage-item" id="stageTab3">③ 규칙 추출</div>
+      <div class="stage-arrow">›</div>
+      <div class="stage-item" id="stageTab4">④ 아픔 계량</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Chat panel -->
+    <div class="chat-panel">
+      <div class="complete-banner" id="completeBanner">
+        ✓ 인터뷰 완료! 오른쪽 패널에서 온톨로지를 확인하고 내보내기 하세요.
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <textarea id="userInput" placeholder="답변을 입력하세요... (Shift+Enter로 줄바꿈)" rows="2"></textarea>
+        <button id="sendBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ontology panel -->
+    <div class="ontology-panel">
+      <div class="onto-header">
+        <div>
+          <h2>포착된 온톨로지</h2>
+          <div class="node-count-row" id="nodeCountRow">
+            <span class="node-count" style="background:var(--color-A-bg);color:var(--color-A)" id="cnt-A">A·0</span>
+            <span class="node-count" style="background:var(--color-O-bg);color:var(--color-O)" id="cnt-O">O·0</span>
+            <span class="node-count" style="background:var(--color-E-bg);color:var(--color-E)" id="cnt-E">E·0</span>
+            <span class="node-count" style="background:var(--color-R-bg);color:var(--color-R)" id="cnt-R">R·0</span>
+            <span class="node-count" style="background:var(--color-RU-bg);color:var(--color-RU)" id="cnt-RU">RU·0</span>
+            <span class="node-count" style="background:var(--color-B-bg);color:var(--color-B)" id="cnt-B">B·0</span>
+          </div>
+        </div>
+        <button id="exportBtn">내보내기</button>
+      </div>
+
+      <div class="onto-scroll" id="ontoScroll">
+        <!-- Node groups rendered here -->
+      </div>
+    </div>
+  </div>
+
+<script>
+  const NODE_TYPES = [
+    { key: 'A',  label: '행위자',  sub: '누가 움직이나' },
+    { key: 'O',  label: '대상',    sub: '무엇을 다루나' },
+    { key: 'E',  label: '이벤트',  sub: '무슨 일이 벌어지나' },
+    { key: 'R',  label: '기록',    sub: '어디에 적히나' },
+    { key: 'RU', label: '규칙',    sub: '어떤 기준으로' },
+    { key: 'B',  label: '병목',    sub: '어디서 막히나' },
+  ];
+
+  let state = {
+    tenant: '',
+    stage: 1,
+    history: [],          // [{role, content}]
+    nodes: [],            // all captured nodes
+    complete: false,
+  };
+
+  // ── Intro ──
+  let _started = false;
+  document.getElementById('startBtn').addEventListener('click', () => {
+    if (_started) return;
+    const name = document.getElementById('tenantInput').value.trim();
+    if (!name) {
+      document.getElementById('tenantInput').focus();
+      return;
+    }
+    _started = true;
+    state.tenant = name;
+    document.getElementById('introScreen').style.display = 'none';
+    document.getElementById('headerTenant').textContent = name + ' — 온톨로지 인터뷰';
+    startInterview();
+  });
+
+  document.getElementById('tenantInput').addEventListener('keydown', e => {
+    // e.isComposing: IME 조합 중에는 Enter 무시 (한글 마지막 글자 중복 방지)
+    if (e.key === 'Enter' && !e.isComposing) document.getElementById('startBtn').click();
+  });
+
+  // ── Send message ──
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  let _sending = false;
+
+  userInput.addEventListener('keydown', e => {
+    // e.isComposing: IME 조합 중에는 Enter 무시 (한글 마지막 글자 중복 방지)
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  // ── Export ──
+  document.getElementById('exportBtn').addEventListener('click', exportOntology);
+
+  function startInterview() {
+    renderOntoPanel();
+    sendToAI('__START__');
+  }
+
+  async function sendMessage() {
+    if (_sending) return;
+    const text = userInput.value.trim();
+    if (!text || state.complete) return;
+
+    _sending = true;
+    sendBtn.disabled = true;
+
+    appendMessage('user', text);
+    state.history.push({ role: 'user', content: text });
+    userInput.value = '';
+    userInput.style.height = '';
+
+    const typingEl = appendTyping();
+
+    try {
+      await sendToAI(text);
+    } finally {
+      typingEl.remove();
+      sendBtn.disabled = false;
+      _sending = false;
+      userInput.focus();
+    }
+  }
+
+  async function sendToAI(userMessage) {
+    const typingEl = userMessage === '__START__' ? appendTyping() : null;
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/ontology/interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant: state.tenant,
+          stage: state.stage,
+          history: state.history,
+          userMessage: userMessage === '__START__' ? null : userMessage,
+          capturedNodes: state.nodes,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        appendMessage('ai', '⚠️ 오류가 발생했습니다. 다시 시도해주세요.\n' + err);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Add new nodes
+      if (data.nodes?.length) {
+        for (const node of data.nodes) {
+          const exists = state.nodes.find(n => n.id === node.id);
+          if (!exists) state.nodes.push(node);
+        }
+        renderOntoPanel();
+      }
+
+      // Add AI question as message
+      if (data.question) {
+        appendMessage('ai', data.question, data.insight);
+        state.history.push({ role: 'assistant', content: data.question });
+      }
+
+      // Stage progress
+      if (data.stageComplete && state.stage < 4) {
+        state.stage++;
+        updateStageBar();
+      } else if (data.stageComplete && state.stage === 4) {
+        state.complete = true;
+        document.getElementById('completeBanner').style.display = 'block';
+        document.getElementById('exportBtn').style.display = 'block';
+        userInput.disabled = true;
+        userInput.placeholder = '인터뷰가 완료되었습니다.';
+        sendBtn.disabled = true;
+        return;
+      }
+
+    } catch (e) {
+      appendMessage('ai', '⚠️ 네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      if (typingEl) typingEl.remove();
+      sendBtn.disabled = state.complete;
+    }
+  }
+
+  // ── DOM helpers ──
+  function appendMessage(role, text, insight) {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role === 'ai' ? 'ai-av' : 'user-av'}`;
+    avatar.textContent = role === 'ai' ? 'AI' : '나';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    // Render markdown-style line breaks
+    const textDiv = document.createElement('div');
+    textDiv.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    bubble.appendChild(textDiv);
+
+    if (insight) {
+      const chip = document.createElement('div');
+      chip.className = 'insight-chip';
+      chip.textContent = '💡 ' + insight;
+      bubble.appendChild(chip);
+    }
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function appendTyping() {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message ai';
+    div.innerHTML = `
+      <div class="avatar ai-av">AI</div>
+      <div class="bubble">
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Stage bar ──
+  function updateStageBar() {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`stageTab${i}`);
+      el.classList.remove('active', 'done');
+      if (i < state.stage) el.classList.add('done');
+      else if (i === state.stage) el.classList.add('active');
+    }
+  }
+
+  // ── Ontology panel ──
+  function renderOntoPanel() {
+    const scroll = document.getElementById('ontoScroll');
+
+    // Update counts
+    for (const t of NODE_TYPES) {
+      const cnt = state.nodes.filter(n => n.type === t.key).length;
+      document.getElementById(`cnt-${t.key}`).textContent = `${t.key}·${cnt}`;
+    }
+
+    // Re-render groups
+    scroll.innerHTML = '';
+    for (const t of NODE_TYPES) {
+      const typeNodes = state.nodes.filter(n => n.type === t.key);
+      const group = document.createElement('div');
+      group.className = `node-group type-${t.key}`;
+
+      group.innerHTML = `
+        <div class="node-group-header">
+          <div class="node-type-badge">${t.key}</div>
+          <span class="node-group-label">${t.label}</span>
+          <span class="node-group-sublabel">${t.sub}</span>
+          <span class="node-group-count">${typeNodes.length}</span>
+        </div>
+        <div class="node-list" id="list-${t.key}">
+          ${typeNodes.length === 0
+            ? `<div class="empty-group">아직 없음</div>`
+            : typeNodes.map(n => `
+              <div class="node-item">
+                <div class="node-item-id">${n.id}</div>
+                <div class="node-item-name">${escapeHtml(n.name)}</div>
+                ${n.desc ? `<div class="node-item-desc">${escapeHtml(n.desc)}</div>` : ''}
+              </div>`).join('')
+          }
+        </div>`;
+
+      scroll.appendChild(group);
+    }
+
+    // Pain score if B nodes exist and stage >= 4
+    const bNodes = state.nodes.filter(n => n.type === 'B');
+    if (bNodes.length > 0) {
+      const pain = document.createElement('div');
+      pain.className = 'pain-panel';
+      pain.style.display = 'block';
+      pain.innerHTML = `
+        <h3>🔥 병목 우선순위</h3>
+        ${bNodes.map((n, i) => `
+          <div class="pain-row">
+            <span class="pain-rank">${i + 1}</span>
+            <span class="pain-name">${escapeHtml(n.name)}</span>
+            <span class="pain-score">${n.painScore ? n.painScore + '점' : ''}</span>
+          </div>`).join('')}`;
+      scroll.appendChild(pain);
+    }
+  }
+
+  // ── Export ──
+  function exportOntology() {
+    const data = {
+      tenant: state.tenant,
+      exportedAt: new Date().toISOString(),
+      nodes: state.nodes,
+      summary: {
+        A: state.nodes.filter(n => n.type === 'A').length,
+        O: state.nodes.filter(n => n.type === 'O').length,
+        E: state.nodes.filter(n => n.type === 'E').length,
+        R: state.nodes.filter(n => n.type === 'R').length,
+        RU: state.nodes.filter(n => n.type === 'RU').length,
+        B: state.nodes.filter(n => n.type === 'B').length,
+      },
+      cypher: generateCypher(),
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ontology-${state.tenant}-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function generateCypher() {
+    const lines = [];
+    lines.push('// Neo4j Cypher — 생성 쿼리');
+    lines.push(`// 테넌트: ${state.tenant}`);
+    lines.push('');
+    for (const n of state.nodes) {
+      const label = { A:'Actor', O:'Object', E:'Event', R:'Record', RU:'Rule', B:'Bottleneck' }[n.type] || n.type;
+      lines.push(
+        `CREATE (${n.id.replace('-','_')}:${label} {tenant:"${state.tenant}", id:"${n.id}", name:"${n.name.replace(/"/g,'\\"')}", desc:"${(n.desc||'').replace(/"/g,'\\"')}", status:"active"})`
+      );
+    }
+    return lines.join('\n');
+  }
+
+  // Init panel
+  renderOntoPanel();
+</script>
+</body>
+</html>
