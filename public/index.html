@@ -3,406 +3,719 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>업무 온톨로지 — 중소기업 업무 진단 플랫폼</title>
-<meta name="description" content="회사 업무 흐름을 그래프로 그리고, 어디서 시간과 돈이 새는지 정확히 찾아냅니다.">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<title>ontology — 업무 진단 플랫폼 | jobslab</title>
+<meta name="description" content="업무 흐름을 그래프로 그리면 병목이 어디인지 드러납니다. 시간이 새는 곳과 돈이 새는 곳을 지도로 확인하세요.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="/assets/tokens.css">
+<link rel="stylesheet" href="/assets/design-system.css">
+<link rel="stylesheet" href="/assets/details.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #FFFFFF; --bg2: #F8FAFC; --bg3: #F1F5F9;
-  --border: rgba(0,0,0,0.07); --border2: rgba(0,0,0,0.12);
-  --text: #111827; --text2: #4B5563; --text3: #9CA3AF;
-  --brand: #1C2E72; --brand2: #4F7BF7;
-  --cB: #F87171; --cE: #F59E0B; --cA: #60A5FA;
-}
-html { scroll-behavior: smooth; }
-body { font-family: 'Pretendard Variable', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+/* 페이지 전용 — 전부 --ds-* 토큰 참조, hex 금지 */
+a.btn { text-decoration: none; }
+.hero h1 { max-width: 900px; }
+.hero-sub { max-width: 460px; }
 
-/* Nav */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 56px; background: rgba(255,255,255,0.94); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 40px;
-}
-.nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; color: var(--brand); text-decoration: none; }
-.nav-logo svg { color: var(--brand2); }
-.nav-spacer { flex: 1; }
-.nav-btn {
-  background: var(--brand); color: #fff; border-radius: 8px; padding: 8px 20px;
-  font-size: 14px; font-weight: 600; text-decoration: none; transition: opacity 0.15s;
-  display: flex; align-items: center; gap: 6px;
-}
-.nav-btn:hover { opacity: 0.88; }
+/* 그래프 프리뷰 — 라이트 패널 (다크 섹션 금지 원칙) */
+.preview { margin-top: clamp(48px, 6vw, 72px); border: 1px solid var(--ds-line); background: var(--ds-surface); }
+.preview-bar { display: flex; align-items: baseline; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--ds-line); }
+.preview-bar .t-label { color: var(--ds-muted); }
+.preview-bar .badge { margin-left: auto; }
+.preview-bar .hint { font-size: 12px; color: var(--ds-faint); }
+#pgc { position: relative; height: 420px; overflow: hidden; }
+#pgraph { width: 100%; height: 100%; cursor: grab; display: block; }
+#pgraph:active { cursor: grabbing; }
+#ptip { position: absolute; pointer-events: none; background: var(--ds-bg); border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); padding: 9px 12px; font-size: 12px; line-height: 1.6; max-width: 220px; opacity: 0; transition: opacity .12s ease; z-index: 10; }
+.pleg { position: absolute; bottom: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 6px 14px; background: var(--ds-bg); border: 1px solid var(--ds-line); border-radius: var(--radius-base); padding: 8px 12px; }
+.pleg span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ds-muted); }
+.pleg i { width: 8px; height: 8px; border-radius: 50%; font-style: normal; }
+.pnode text { pointer-events: none; font-family: 'Wanted Sans Variable', sans-serif; font-size: 10px; text-anchor: middle; dominant-baseline: central; }
+.pnode .plbl { fill: var(--ds-ink); font-weight: 600; }
+.pnode .powner { fill: var(--ds-faint); font-size: 9px; font-weight: 500; }
+.pdim { opacity: .12; }
 
-/* Hero */
-.hero {
-  padding: 140px 40px 100px; max-width: 960px; margin: 0 auto; text-align: center;
-}
-.hero-label {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(79,123,247,0.08); color: var(--brand2);
-  border: 1px solid rgba(79,123,247,0.2); border-radius: 20px;
-  padding: 4px 14px; font-size: 13px; font-weight: 600; margin-bottom: 24px;
-}
-.hero-title {
-  font-size: clamp(36px, 5vw, 60px); font-weight: 900; line-height: 1.15;
-  letter-spacing: -0.03em; color: var(--brand); margin-bottom: 20px;
-}
-.hero-title em { color: var(--brand2); font-style: normal; }
-.hero-sub {
-  font-size: clamp(16px, 2vw, 20px); color: var(--text2); max-width: 600px;
-  margin: 0 auto 40px; line-height: 1.7;
-}
-.hero-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-.btn-primary {
-  background: var(--brand); color: #fff; border-radius: 10px;
-  padding: 14px 32px; font-size: 16px; font-weight: 700;
-  text-decoration: none; display: flex; align-items: center; gap: 8px;
-  transition: all 0.15s; box-shadow: 0 4px 24px rgba(28,46,114,0.25);
-}
-.btn-primary:hover { background: var(--brand2); box-shadow: 0 6px 28px rgba(79,123,247,0.35); }
-.btn-secondary {
-  background: var(--bg3); color: var(--text); border-radius: 10px;
-  padding: 14px 28px; font-size: 16px; font-weight: 600;
-  text-decoration: none; border: 1px solid var(--border2); transition: all 0.15s;
-}
-.btn-secondary:hover { border-color: var(--brand2); color: var(--brand2); }
+/* 데모 수치 각주 */
+.stat-note { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--ds-line); }
 
-/* Graph preview illustration */
-.graph-preview {
-  margin: 60px auto 0; max-width: 760px; background: #0A0D14;
-  border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
-  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-}
-.gp-bar {
-  height: 36px; background: #111520; border-bottom: 1px solid rgba(255,255,255,0.07);
-  display: flex; align-items: center; padding: 0 14px; gap: 7px;
-}
-.gp-dot { width: 10px; height: 10px; border-radius: 50%; }
-.gp-title { margin-left: auto; margin-right: auto; font-size: 12px; color: #6B7280; }
-.gp-svg { display: block; width: 100%; height: 240px; }
+/* CTA — 라이트 유지, 타이포가 일함 */
+.cta { text-align: left; }
+.cta .btns { margin-top: clamp(32px, 4.5vw, 48px); display: flex; gap: 12px; flex-wrap: wrap; }
 
-/* Features */
-.features { padding: 80px 40px; max-width: 960px; margin: 0 auto; }
-.section-label {
-  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
-  color: var(--brand2); margin-bottom: 12px;
-}
-.section-title {
-  font-size: clamp(26px, 3.5vw, 36px); font-weight: 800; color: var(--text);
-  margin-bottom: 48px; letter-spacing: -0.02em;
-}
-.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-.feat-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
-  padding: 28px; transition: all 0.2s;
-}
-.feat-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(0,0,0,0.06); transform: translateY(-2px); }
-.feat-icon {
-  width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center;
-  justify-content: center; margin-bottom: 16px; font-size: 20px;
-}
-.feat-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
-.feat-desc { font-size: 14px; color: var(--text2); line-height: 1.7; }
+/* ── 3단계 진단 카드 (본진 sflow 결) ── */
+.dflow { display: flex; align-items: stretch; gap: clamp(8px, 1.2vw, 14px); margin-top: clamp(40px, 5vw, 56px); }
+.dcard { flex: 1; border: 1px solid var(--ds-line); border-radius: var(--radius-base); padding: clamp(24px, 2.6vw, 32px) 20px clamp(20px, 2.2vw, 26px); display: flex; flex-direction: column; align-items: center; gap: clamp(16px, 2vw, 22px); text-align: center; color: var(--ds-brand); transition: border-color .25s ease; }
+.dcard:hover { border-color: var(--ds-brand); }
+.dviz { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.ico { width: 60px; height: 40px; overflow: visible; }
+.dtxt { flex: 1; }
+.dhead { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.dnum { font-family: 'Satoshi', sans-serif; font-weight: 300; font-size: 22px; color: var(--ds-muted); }
+.dsep { width: 1px; height: 12px; background: var(--ds-line-strong); }
+.dhead strong { font-size: 16px; letter-spacing: -0.01em; color: var(--ds-ink); }
+.dsub { color: var(--ds-muted); max-width: 240px; margin: 0 auto; }
+.dmeta { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--ds-muted); }
+.darrow { display: flex; align-items: center; color: var(--ds-line-strong); flex: none; transition: color .25s ease; }
+.dcard:hover + .darrow { color: var(--ds-brand); }
 
-/* How it works */
-.how { padding: 80px 40px; background: var(--bg2); }
-.how-inner { max-width: 960px; margin: 0 auto; }
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; margin-top: 48px; position: relative; }
-.steps::before {
-  content: ''; position: absolute; top: 22px; left: 10%; right: 10%;
-  height: 1px; background: var(--border2);
+/* 01 대화 — 새 채팅이 아래에서 밀려 올라옴: 아래=크게 진함(7), 위=작게 반투명(5), 소멸 */
+.ico-listen .bub { transform-box: fill-box; }
+.ico-listen .bub-l { transform-origin: left center; animation: dg-push 3.6s ease-in-out infinite; }
+.ico-listen .bub-r { transform-origin: right center; animation: dg-push 3.6s ease-in-out -1.8s infinite; }
+@keyframes dg-push {
+  0%   { transform: translateY(15px) scale(1);   opacity: 0; }   /* 아래에서 등장 시작 */
+  9%   { transform: translateY(11px) scale(1);   opacity: 1; }   /* 아래 슬롯 도착 (큼·진함) */
+  42%  { transform: translateY(11px) scale(1);   opacity: 1; }   /* 아래 유지 */
+  55%  { transform: translateY(-7px) scale(.71); opacity: .4; }  /* 위로 밀림 (작아짐·반투명) */
+  88%  { transform: translateY(-7px) scale(.71); opacity: .4; }  /* 위 유지 */
+  100% { transform: translateY(-21px) scale(.58); opacity: 0; }  /* 더 위로 소멸 */
 }
-.step { text-align: center; padding: 0 20px; position: relative; }
-.step-num {
-  width: 44px; height: 44px; border-radius: 50%; background: var(--brand); color: #fff;
-  font-weight: 800; font-size: 16px; display: flex; align-items: center;
-  justify-content: center; margin: 0 auto 16px; border: 3px solid var(--bg2);
-  position: relative; z-index: 1;
-}
-.step-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-.step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
 
-/* ROI section */
-.roi-sec { padding: 80px 40px; max-width: 960px; margin: 0 auto; }
-.roi-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 48px; }
-.roi-card {
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
-  padding: 24px; text-align: center;
-}
-.roi-num { font-size: 36px; font-weight: 900; color: var(--brand); line-height: 1; margin-bottom: 6px; }
-.roi-num span { font-size: 20px; }
-.roi-label { font-size: 13px; color: var(--text2); }
-.roi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+/* 02 병목 계량 — SMIL로 라인·노드가 morph (엉킴 → 직선 4단계) */
 
-/* CTA */
-.cta-sec {
-  padding: 80px 40px; background: var(--brand); text-align: center;
+/* 03 시스템 만들기 — 아래에서부터 불규칙하게 뽈롱 채워져 2×2 완성 */
+.ico-build .bk { fill: currentColor; transform-box: fill-box; transform-origin: center; opacity: 0; animation: dg-pop 3.6s ease-in-out infinite; }
+.ico-build .k3 { animation-delay: 0s; }      /* 아래 좌 */
+.ico-build .k4 { animation-delay: .5s; }      /* 아래 우 */
+.ico-build .k1 { animation-delay: 1.15s; }    /* 위 좌 (불규칙 간격) */
+.ico-build .k2 { animation-delay: 1.45s; }    /* 위 우 */
+@keyframes dg-pop {
+  0% { opacity: 0; transform: scale(.2) translateY(6px); }
+  10% { opacity: 1; transform: scale(1.15) translateY(0); }
+  16% { transform: scale(1); }
+  75% { opacity: 1; transform: scale(1); }
+  85%, 100% { opacity: 0; transform: scale(1); }
 }
-.cta-title { font-size: clamp(26px,4vw,40px); font-weight: 900; color: #fff; margin-bottom: 16px; }
-.cta-sub { font-size: 16px; color: rgba(255,255,255,0.75); margin-bottom: 36px; }
-.cta-btn {
-  background: #fff; color: var(--brand); border-radius: 10px;
-  padding: 14px 36px; font-size: 16px; font-weight: 700;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
-  transition: all 0.15s; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-.cta-btn:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.2); transform: translateY(-1px); }
 
-/* Footer */
-footer {
-  padding: 32px 40px; background: var(--bg2); border-top: 1px solid var(--border);
-  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+@media (prefers-reduced-motion: reduce) {
+  .ico-listen .bub, .ico-build .bk { animation: none; }
+  .ico-listen .bub { opacity: 1; transform: none; }
+  .ico-build .bk { opacity: 1; }
+  /* SMIL(병목 아이콘)은 JS로 정지 처리 */
 }
-.foot-logo { font-weight: 800; font-size: 14px; color: var(--brand); }
-.foot-spacer { flex: 1; }
-.foot-text { font-size: 12px; color: var(--text3); }
-.foot-contact { font-size: 12px; color: var(--text2); }
-.foot-contact a { color: var(--brand2); text-decoration: none; }
+@media (max-width: 768px) {
+  .dflow { flex-direction: column; gap: 8px; }
+  .dcard { flex-direction: row; align-items: center; text-align: left; gap: 18px; padding: 16px 18px; }
+  .dviz { width: 60px; flex: none; min-height: 0; }
+  .dhead { justify-content: flex-start; }
+  .dsub { margin: 0; max-width: none; }
+  .dmeta { display: none; }
+  .darrow { display: none; }
+}
+
+/* ── 문의 모달 (본진 jobslab.dev 폼 이식) ── */
+.modal-backdrop { position: fixed; inset: 0; background: color-mix(in srgb, var(--ds-ink) 42%, transparent); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity .25s ease; }
+.modal-backdrop.on { opacity: 1; }
+.modal-backdrop[hidden] { display: none; }
+.modal { background: var(--ds-bg); border-radius: var(--radius-base); max-width: 460px; width: 100%; padding: clamp(28px, 4vw, 40px); position: relative; max-height: 90svh; overflow-y: auto; transform: translateY(14px); transition: transform .3s cubic-bezier(.22,1,.36,1); border: 1px solid var(--ds-line); }
+.modal-backdrop.on .modal { transform: none; }
+.modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.modal-x { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; cursor: pointer; color: var(--ds-muted); transition: color .2s ease; }
+.modal-x:hover { color: var(--ds-ink); }
+body.modal-open { overflow: hidden; }
+.inq-status { margin-top: 12px; font-size: 13px; min-height: 18px; }
+
+/* ── 원칙 — 자가 순환 루프 아이콘 ── */
+.pviz { margin-bottom: 26px; }
+.ico-loop { width: 58px; height: 58px; overflow: visible; }
+.ico-loop .ln { fill: var(--ds-line-strong); animation: loop-hit 3.6s ease-in-out infinite; }
+.ico-loop .lp1 { animation-delay: 0s; }
+.ico-loop .lp2 { animation-delay: .9s; }
+.ico-loop .lp3 { animation-delay: 1.8s; }
+.ico-loop .lp4 { animation-delay: 2.7s; }
+@keyframes loop-hit {
+  0%, 100% { fill: var(--ds-line-strong); }
+  4% { fill: var(--ds-brand); }
+  18% { fill: var(--ds-line-strong); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ico-loop .orbit { display: none; }
+  .ico-loop .ln { animation: none; fill: var(--ds-brand); }
+}
+
+/* ── 온톨로지가 켜지면 — before/after ── */
+.seg { display: inline-flex; margin-top: 40px; border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); overflow: hidden; gap: 1px; background: var(--ds-line-strong); }
+.seg-btn { font: inherit; font-size: 14px; font-weight: 500; padding: 10px 22px; background: var(--ds-bg); color: var(--ds-muted); border: 0; cursor: pointer; transition: background .2s ease, color .2s ease; }
+.seg-btn.on { background: var(--ds-brand); color: var(--ds-on-brand); }
+
+/* AS-IS / TO-BE 좌우 동시 비교 */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 44px); margin-top: 44px; }
+.lane-hd { display: flex; align-items: center; gap: 9px; margin-bottom: 22px; font-size: 13px; color: var(--ds-muted); }
+.lane-tag { font-family: 'Satoshi', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .08em; padding: 3px 9px; border-radius: var(--radius-base); background: var(--ds-surface); color: var(--ds-muted); border: 1px solid var(--ds-line-strong); }
+.lane-tag.on { background: var(--ds-brand); color: var(--ds-on-brand); border-color: var(--ds-brand); }
+.track { position: relative; list-style: none; padding: 0 0 0 34px; margin: 0; }
+/* 세로 흐름선 (중립색 divider) */
+.track::before { content: ''; position: absolute; left: 15px; top: 4px; bottom: 14px; width: 2px; background: var(--ds-line); }
+
+/* TO-BE 완료 알림 — 마지막 마커에서 웨이브 + 완료 배지 */
+.done-badge { display: inline-flex; align-items: center; opacity: 0; transform: scale(.8); font-size: 11px; font-weight: 600; letter-spacing: .02em; padding: 2px 8px; border-radius: var(--radius-base); background: var(--ds-brand); color: var(--ds-on-brand); transition: opacity .35s ease, transform .35s cubic-bezier(.22,1.4,.5,1); margin-left: 4px; }
+.lane-done .done-badge { opacity: 1; transform: scale(1); }
+.track-after.done .step:last-child::after {
+  content: ''; position: absolute; left: -25px; top: 50%; width: 10px; height: 10px; margin-top: -5px;
+  border-radius: 50%; border: 2px solid var(--ds-brand); pointer-events: none;
+  animation: done-wave 1.3s ease-out 3;
+}
+@keyframes done-wave { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(3.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .track-after.done .step:last-child::after { animation: none; opacity: 0; }
+}
+
+.step { position: relative; display: flex; align-items: center; gap: 13px; min-height: 50px; padding: 4px 0; opacity: .38; transition: opacity .35s ease; }
+.step.active { opacity: 1; }
+/* 스텝 마커 — 진행선이 도달하면 활성 */
+.step::before { content: ''; position: absolute; left: -25px; top: 50%; transform: translateY(-50%); width: 10px; height: 10px; border-radius: 50%; background: var(--ds-line-strong); border: 2px solid var(--ds-bg); z-index: 3; transition: background .3s ease; }
+.track-before .step.active::before { background: var(--ds-muted); }
+.track-after .step.active::before { background: var(--ds-brand); }
+.step.end-after.active::before { box-shadow: 0 0 0 4px var(--ds-brand-tint); }
+/* 병목 = 마커가 빨갛게 펄스 (점 느려짐이 아니라 명확한 표시) */
+.step.bad.active::before { background: var(--ds-err); animation: node-pulse 1.1s ease-in-out infinite; }
+@keyframes node-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--ds-err); } 55% { box-shadow: 0 0 0 5px transparent; } }
+.step.end-before.active::before { background: var(--ds-muted); }
+
+/* 진행선 — JS가 활성 스텝 마커 y까지 정확히 채움 */
+.progress { position: absolute; left: 15px; top: 4px; width: 2px; height: 0; background: var(--ds-brand); z-index: 1; transition: height .45s cubic-bezier(.5,0,.25,1); }
+.track-before .progress { background: var(--ds-err); }
+
+/* 사람/에이전트 시각 구분 — 사람=회색 아웃라인 원, 에이전트=진한 브랜드 각진 */
+.who { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .02em; padding: 4px 10px 4px 8px; border-radius: var(--radius-base); min-width: 70px; }
+.who .wi { width: 13px; height: 13px; flex: none; }
+.who-p { background: var(--ds-surface); color: var(--ds-muted); border: 1px solid var(--ds-line-strong); }
+.who-a { background: var(--ds-brand); color: var(--ds-on-brand); }
+.who-wait { background: var(--ds-err-tint); color: var(--ds-err); border: 1px solid color-mix(in srgb, var(--ds-err) 30%, transparent); }
+.who-now { background: var(--ds-brand); color: var(--ds-on-brand); }
+.s-body { font-size: 15px; color: var(--ds-ink); }
+.step.bad .s-body em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--ds-err); margin-left: 8px; letter-spacing: .04em; padding: 1px 6px; background: var(--ds-err-tint); border-radius: var(--radius-base); }
+
+.shift-sum-one { margin-top: 36px; color: var(--ds-ink); font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step { opacity: 1; }
+  .step.bad.active::before { animation: none; }
+  .progress { transition: none; }
+}
+@media (max-width: 768px) {
+  .compare { grid-template-columns: 1fr; gap: 8px; }
+  .lane + .lane { margin-top: 12px; }
+}
+@media (max-width: 640px) {
+  .who { min-width: 60px; font-size: 10px; }
+  .s-body { font-size: 14px; }
+}
 </style>
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="/">
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <circle cx="9" cy="4" r="3" fill="currentColor" opacity=".9"/>
-      <circle cx="3" cy="14" r="2.5" fill="currentColor" opacity=".7"/>
-      <circle cx="15" cy="14" r="2.5" fill="currentColor" opacity=".7"/>
-      <line x1="9" y1="7" x2="3" y2="11.5" stroke="currentColor" stroke-width="1.3" opacity=".5"/>
-      <line x1="9" y1="7" x2="15" y2="11.5" stroke="currentColor" stroke-width="1.3" opacity=".5"/>
-      <line x1="3" y1="14" x2="15" y2="14" stroke="currentColor" stroke-width="1.3" opacity=".5"/>
-    </svg>
-    업무 온톨로지
-  </a>
-  <div class="nav-spacer"></div>
-  <a class="nav-btn" href="/mock">
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 7h6M7 4v6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-    데모 보기
-  </a>
-</nav>
-
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-label">
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="3" r="2" fill="currentColor"/><circle cx="2" cy="9.5" r="1.8" fill="currentColor" opacity=".6"/><circle cx="10" cy="9.5" r="1.8" fill="currentColor" opacity=".6"/><line x1="6" y1="5" x2="2" y2="7.7" stroke="currentColor" stroke-width="1.1" opacity=".6"/><line x1="6" y1="5" x2="10" y2="7.7" stroke="currentColor" stroke-width="1.1" opacity=".6"/></svg>
-    중소기업 업무 구조 진단 플랫폼
-  </div>
-  <h1 class="hero-title">어디서 돈이 새는지<br><em>정확히</em> 찾아냅니다</h1>
-  <p class="hero-sub">업무 흐름을 그래프로 그리면, 반복 비효율과 승인 병목이 자동으로 드러납니다. 감(感)이 아닌 데이터로 개선합니다.</p>
-  <div class="hero-actions">
-    <a class="btn-primary" href="/mock">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polygon points="6,4 12,8 6,12" fill="currentColor"/></svg>
-      실제 데모 보기
-    </a>
-    <a class="btn-secondary" href="mailto:contact@jobslab.dev">도입 문의</a>
-  </div>
-
-  <!-- Graph preview -->
-  <div class="graph-preview">
-    <div class="gp-bar">
-      <div class="gp-dot" style="background:#F87171"></div>
-      <div class="gp-dot" style="background:#FBBF24"></div>
-      <div class="gp-dot" style="background:#34D399"></div>
-      <span class="gp-title">업무 온톨로지 대시보드 — 데모</span>
-    </div>
-    <svg class="gp-svg" viewBox="0 0 760 240" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arr" viewBox="0 -3 6 6" refX="6" refY="0" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,-3L6,0L0,3" fill="rgba(255,255,255,0.2)"/>
-        </marker>
-        <marker id="arr-r" viewBox="0 -3 6 6" refX="6" refY="0" markerWidth="4" markerHeight="4" orient="auto">
-          <path d="M0,-3L6,0L0,3" fill="rgba(248,113,113,0.6)"/>
-        </marker>
-        <filter id="glow-r"><feGaussianBlur stdDeviation="4" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
-      </defs>
-      <!-- Background grid hint -->
-      <rect width="760" height="240" fill="#0A0D14"/>
-
-      <!-- Links -->
-      <line x1="120" y1="60" x2="220" y2="115" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="220" y1="130" x2="310" y2="115" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="160" y1="160" x2="310" y2="130" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="310" y1="120" x2="390" y2="60" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="310" y1="130" x2="420" y2="155" stroke="rgba(248,113,113,0.45)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr-r)"/>
-      <line x1="420" y1="165" x2="560" y2="120" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="560" y1="115" x2="640" y2="150" stroke="rgba(248,113,113,0.45)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr-r)"/>
-      <line x1="560" y1="115" x2="630" y2="75" stroke="rgba(255,255,255,0.14)" stroke-width="1.2" marker-end="url(#arr)"/>
-      <line x1="630" y1="75" x2="700" y2="50" stroke="rgba(255,255,255,0.1)" stroke-width="1" marker-end="url(#arr)"/>
-
-      <!-- Actors (blue circles) -->
-      <circle cx="120" cy="55" r="22" fill="rgba(96,165,250,0.12)" stroke="#60A5FA" stroke-width="2"/>
-      <text x="120" y="52" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="700" font-family="sans-serif">A01</text>
-      <text x="120" y="82" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">영업팀</text>
-
-      <circle cx="160" cy="165" r="22" fill="rgba(96,165,250,0.12)" stroke="#60A5FA" stroke-width="2"/>
-      <text x="160" y="162" text-anchor="middle" fill="#60A5FA" font-size="10" font-weight="700" font-family="sans-serif">A02</text>
-      <text x="160" y="192" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">생산관리팀</text>
-
-      <!-- Events (amber) -->
-      <circle cx="220" cy="120" r="20" fill="rgba(245,158,11,0.12)" stroke="#F59E0B" stroke-width="2"/>
-      <text x="220" y="117" text-anchor="middle" fill="#F59E0B" font-size="10" font-weight="700" font-family="sans-serif">E01</text>
-      <text x="220" y="146" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">발주접수</text>
-
-      <circle cx="310" cy="120" r="20" fill="rgba(245,158,11,0.12)" stroke="#F59E0B" stroke-width="2"/>
-      <text x="310" y="117" text-anchor="middle" fill="#F59E0B" font-size="10" font-weight="700" font-family="sans-serif">E02</text>
-      <text x="310" y="146" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">재고확인</text>
-
-      <circle cx="560" cy="110" r="20" fill="rgba(245,158,11,0.12)" stroke="#F59E0B" stroke-width="2"/>
-      <text x="560" y="107" text-anchor="middle" fill="#F59E0B" font-size="10" font-weight="700" font-family="sans-serif">E04</text>
-      <text x="560" y="136" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">출고승인</text>
-
-      <!-- Object (purple) -->
-      <circle cx="390" cy="52" r="18" fill="rgba(167,139,250,0.12)" stroke="#A78BFA" stroke-width="2"/>
-      <text x="390" y="49" text-anchor="middle" fill="#A78BFA" font-size="10" font-weight="700" font-family="sans-serif">O02</text>
-      <text x="390" y="75" text-anchor="middle" fill="#9CA3AF" font-size="9" font-family="sans-serif">재고DB</text>
-
-      <!-- Rule (green) -->
-      <circle cx="420" cy="50" r="0" fill="none"/>
-      <circle cx="700" cy="45" r="16" fill="rgba(74,222,128,0.1)" stroke="#4ADE80" stroke-width="1.8"/>
-      <text x="700" y="42" text-anchor="middle" fill="#4ADE80" font-size="8" font-weight="700" font-family="sans-serif">RU02</text>
-      <text x="700" y="65" text-anchor="middle" fill="#9CA3AF" font-size="8" font-family="sans-serif">이중승인</text>
-
-      <!-- Record (teal) -->
-      <circle cx="630" cy="72" r="17" fill="rgba(52,211,153,0.1)" stroke="#34D399" stroke-width="1.8"/>
-      <text x="630" y="69" text-anchor="middle" fill="#34D399" font-size="9" font-weight="700" font-family="sans-serif">R02</text>
-      <text x="630" y="93" text-anchor="middle" fill="#9CA3AF" font-size="8" font-family="sans-serif">납기확인서</text>
-
-      <!-- Bottlenecks (red, pulsing via animation) -->
-      <circle cx="420" cy="168" r="24" fill="rgba(248,113,113,0.15)" stroke="#F87171" stroke-width="2.5">
-        <animate attributeName="r" values="24;27;24" dur="1.8s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="1;0.7;1" dur="1.8s" repeatCount="indefinite"/>
-      </circle>
-      <text x="420" y="165" text-anchor="middle" fill="#F87171" font-size="10" font-weight="700" font-family="sans-serif">B01</text>
-      <text x="420" y="198" text-anchor="middle" fill="#F87171" font-size="9" font-family="sans-serif">수동재고조회</text>
-
-      <circle cx="640" cy="158" r="24" fill="rgba(248,113,113,0.15)" stroke="#F87171" stroke-width="2.5">
-        <animate attributeName="r" values="24;27;24" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="1;0.7;1" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
-      </circle>
-      <text x="640" y="155" text-anchor="middle" fill="#F87171" font-size="10" font-weight="700" font-family="sans-serif">B02</text>
-      <text x="640" y="188" text-anchor="middle" fill="#F87171" font-size="9" font-family="sans-serif">승인대기</text>
-
-      <!-- Callouts -->
-      <rect x="450" y="148" width="90" height="32" rx="6" fill="rgba(248,113,113,0.12)" stroke="rgba(248,113,113,0.3)" stroke-width="1"/>
-      <text x="495" y="161" text-anchor="middle" fill="#F87171" font-size="9" font-weight="700" font-family="sans-serif">월 70시간 낭비</text>
-      <text x="495" y="174" text-anchor="middle" fill="#F87171" font-size="8" font-family="sans-serif">₩1,400,000/월</text>
-
-      <!-- Legend hint -->
-      <rect x="20" y="190" width="130" height="42" rx="6" fill="rgba(17,21,32,0.9)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
-      <circle cx="34" cy="205" r="5" fill="rgba(96,165,250,0.3)" stroke="#60A5FA" stroke-width="1.2"/>
-      <text x="44" y="208" fill="#9CA3AF" font-size="9" font-family="sans-serif">담당자</text>
-      <circle cx="74" cy="205" r="5" fill="rgba(245,158,11,0.3)" stroke="#F59E0B" stroke-width="1.2"/>
-      <text x="84" y="208" fill="#9CA3AF" font-size="9" font-family="sans-serif">이벤트</text>
-      <circle cx="114" cy="205" r="5" fill="rgba(248,113,113,0.3)" stroke="#F87171" stroke-width="1.2"/>
-      <text x="124" y="208" fill="#F87171" font-size="9" font-family="sans-serif">병목</text>
-      <circle cx="34" cy="221" r="5" fill="rgba(167,139,250,0.3)" stroke="#A78BFA" stroke-width="1.2"/>
-      <text x="44" y="224" fill="#9CA3AF" font-size="9" font-family="sans-serif">객체</text>
-      <circle cx="74" cy="221" r="5" fill="rgba(52,211,153,0.3)" stroke="#34D399" stroke-width="1.2"/>
-      <text x="84" y="224" fill="#9CA3AF" font-size="9" font-family="sans-serif">기록</text>
-      <circle cx="114" cy="221" r="5" fill="rgba(74,222,128,0.3)" stroke="#4ADE80" stroke-width="1.2"/>
-      <text x="124" y="224" fill="#9CA3AF" font-size="9" font-family="sans-serif">규칙</text>
-    </svg>
-  </div>
-</section>
-
-<!-- Features -->
-<section class="features">
-  <div class="section-label">핵심 기능</div>
-  <h2 class="section-title">이걸로 뭘 할 수 있나요</h2>
-  <div class="feat-grid">
-    <div class="feat-card">
-      <div class="feat-icon" style="background:rgba(245,158,11,0.1)">🗺</div>
-      <div class="feat-title">업무 흐름 그래프</div>
-      <div class="feat-desc">담당자·문서·이벤트·규칙의 연결 구조를 Obsidian 스타일 그래프로 시각화합니다. 누가 무엇을 트리거하는지 한눈에 파악됩니다.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon" style="background:rgba(248,113,113,0.1)">🔍</div>
-      <div class="feat-title">병목 자동 감지</div>
-      <div class="feat-desc">12가지 병목 패턴(대기·반복·단절·중복)으로 업무 흐름을 분석합니다. "감으로 알던 문제"가 시간·비용 수치로 바뀝니다.</div>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon" style="background:rgba(52,211,153,0.1)">📈</div>
-      <div class="feat-title">개선 ROI 예측</div>
-      <div class="feat-desc">병목별 낭비 비용과 자동화·프로세스 개선 시 절감 효과를 즉시 계산합니다. 구축 비용 대비 회수 기간을 월 단위로 제시합니다.</div>
+<!-- ══ 히어로 (순백 첫인상, 뷰포트 풀) ══ -->
+<header class="hero">
+  <div class="hero-top">
+    <div class="wrap">
+      <a class="wordmark" href="/"><span class="dot"></span><span class="en">ontology</span></a>
+      <nav class="hero-nav">
+        <a href="/mock">데모</a>
+        <a href="/guide">인터뷰 가이드</a>
+        <a href="#" class="inq-open">문의</a>
+      </nav>
     </div>
   </div>
-</section>
-
-<!-- How it works -->
-<section class="how">
-  <div class="how-inner">
-    <div class="section-label">도입 프로세스</div>
-    <h2 class="section-title">4주 안에 진단 완료</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-title">업무 인터뷰</div>
-        <div class="step-desc">AI가 4단계 질문으로 하루 업무 흐름·기록·규칙·불편을 구조화 수집</div>
+  <div class="hero-main">
+    <div class="wrap">
+      <div class="hero-kicker">
+        <span class="tick"></span>
+        <span class="t-label">데이터 기반 업무 파악 시스템</span>
       </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-title">온톨로지 구축</div>
-        <div class="step-desc">수집된 정보를 6가지 노드·12가지 관계 동사로 정규화하고 그래프 생성</div>
+      <h1 class="t-out-l">업무 병목이 어디인지<br><span class="out">지도로</span> 확인하세요</h1>
+      <div class="hero-sub">
+        <p class="t-body">업무 흐름을 한 장의 지도로. 불필요한 반복과 단계가 드러납니다.</p>
       </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-title">병목 분석</div>
-        <div class="step-desc">12가지 병목 패턴으로 낭비 지점을 탐지하고 시간·비용 영향을 계량화</div>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/mock">데모 보기</a>
+        <button class="btn btn-secondary inq-open" type="button">도입 문의</button>
       </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-title">개선 로드맵</div>
-        <div class="step-desc">ROI 우선순위 기반 개선 과제를 제안하고 실행 지원</div>
+    </div>
+  </div>
+  <div class="hero-bottom">
+    <div class="wrap">
+      <span class="t-label en">Minimum Input. Maximum Output.</span>
+      <span class="scroll-cue"><span class="stem"></span></span>
+    </div>
+  </div>
+</header>
+
+<!-- ══ 그래프 프리뷰 (인터랙티브) ══ -->
+<section class="section" style="padding-top: 0; border-top: 0;">
+  <div class="wrap">
+    <div class="preview">
+      <div class="preview-bar">
+        <span class="t-label">업무 온톨로지 그래프</span>
+        <span class="hint">노드를 끌거나 눌러보세요</span>
+        <span class="badge">데모 시나리오</span>
+      </div>
+      <div id="pgc">
+        <svg id="pgraph" role="img" aria-label="업무 흐름 그래프 데모 — 노드를 드래그하고 클릭해 연결을 탐색"></svg>
+        <div class="pleg">
+          <span><i style="background: var(--ds-brand)"></i>행위자</span>
+          <span><i style="background: var(--ds-brand-soft)"></i>대상</span>
+          <span><i style="background: var(--ds-brand-deep)"></i>이벤트</span>
+          <span><i style="background: var(--ds-muted)"></i>기록</span>
+          <span><i style="background: var(--ds-faint)"></i>규칙</span>
+          <span><i style="background: var(--ds-err)"></i>병목</span>
+        </div>
+        <div id="ptip"></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ROI numbers -->
-<section class="roi-sec">
-  <div class="section-label">실제 효과</div>
-  <h2 class="section-title">중소 제조기업 적용 사례 기준</h2>
-  <div class="roi-cards">
-    <div class="roi-card">
-      <div class="roi-num">82<span>시간</span></div>
-      <div class="roi-label">월 낭비 시간 (발견)</div>
-      <div class="roi-sub">수동 재고 조회 + 승인 대기</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-num">₩140<span>만</span></div>
-      <div class="roi-label">월 절감 가능액</div>
-      <div class="roi-sub">자동화·프로세스 개선 기준</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-num">2.1<span>개월</span></div>
-      <div class="roi-label">투자 회수 기간</div>
-      <div class="roi-sub">구축 비용 ₩290만 기준</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-num">+23<span>%</span></div>
-      <div class="roi-label">납기 준수율 개선</div>
-      <div class="roi-sub">출고 승인 프로세스 개선 후</div>
+<!-- ══ 3단계 진단 (기능+프로세스 통합) ══ -->
+<section class="section">
+  <div class="wrap">
+    <div class="split">
+      <span class="t-label">진단</span>
+      <div>
+        <h2 class="t-out-s">3단계 진단으로<br>바뀔 업무를 확인하세요</h2>
+        <p class="t-body-s" style="margin-top: 16px; max-width: 520px;">진단 기간은 총 2주. 단계마다 상세 리포트를 드립니다.</p>
+
+        <div class="dflow">
+          <article class="dcard">
+            <div class="dviz">
+              <svg class="ico ico-listen" viewBox="0 0 52 42" aria-hidden="true">
+                <!-- 회색 = 왼쪽 채팅 (둥근 꼬리 좌하단) -->
+                <g class="bub bub-l">
+                  <path d="M7 4 H27 Q30 4 30 7 V15 Q30 18 27 18 H12 Q10 18 9 20 Q8 22 5 22 Q7 20 7 18 Q4 18 4 15 V7 Q4 4 7 4 Z"
+                        fill="var(--ds-brand-tint)" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                </g>
+                <!-- 네이비 = 오른쪽 채팅 (둥근 꼬리 우하단) -->
+                <g class="bub bub-r">
+                  <path d="M45 4 H25 Q22 4 22 7 V15 Q22 18 25 18 H40 Q42 18 43 20 Q44 22 47 22 Q45 20 45 18 Q48 18 48 15 V7 Q48 4 45 4 Z"
+                        fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="dtxt">
+              <div class="dhead"><span class="dnum num">01</span><span class="dsep"></span><strong>업무 인터뷰</strong></div>
+              <p class="dsub t-body-s">AI가 4단계 질문으로 업무 흐름을 구조화해 듣습니다.</p>
+            </div>
+            <span class="dmeta">산출 — 업무 지도</span>
+          </article>
+
+          <span class="darrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+
+          <article class="dcard">
+            <div class="dviz">
+              <svg class="ico ico-scan" viewBox="0 0 64 32" aria-hidden="true">
+                <!-- 엉킨 7노드 라인이 그대로 펼쳐지며 4노드로 정리됨 -->
+                <!-- 왼쪽부터 순차로 노드가 제자리 찾아 직선화 (3.6s 사이클) -->
+                <polyline fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" points="6,16 14,6 22,25 32,5 42,26 50,7 58,16">
+                  <animate attributeName="points" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.12;0.26;0.38;0.5;0.6;0.72;0.88;1"
+                    values="6,16 14,6 22,25 32,5 42,26 50,7 58,16 ;
+                            6,16 14,6 22,25 32,5 42,26 50,7 58,16 ;
+                            6,16 23,16 22,25 32,5 42,26 50,7 58,16 ;
+                            6,16 23,16 23,16 32,5 42,26 50,7 58,16 ;
+                            6,16 23,16 23,16 41,16 42,26 50,7 58,16 ;
+                            6,16 23,16 23,16 41,16 41,16 50,7 58,16 ;
+                            6,16 23,16 23,16 41,16 41,16 58,16 58,16 ;
+                            6,16 23,16 23,16 41,16 41,16 58,16 58,16 ;
+                            6,16 14,6 22,25 32,5 42,26 50,7 58,16"/>
+                </polyline>
+                <circle cx="6" cy="16" r="3" fill="currentColor"/>
+                <circle cx="58" cy="16" r="3" fill="currentColor"/>
+                <!-- n1 (14→23, 0.26에 정착) -->
+                <circle r="2.6" fill="currentColor">
+                  <animate attributeName="cx" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.12;0.26;0.88;1" values="14;14;23;23;14"/>
+                  <animate attributeName="cy" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.12;0.26;0.88;1" values="6;6;16;16;6"/>
+                </circle>
+                <!-- n2 (22→23 흡수, 0.38) -->
+                <circle r="2.4" fill="currentColor">
+                  <animate attributeName="cx" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.26;0.38;0.88;1" values="22;22;23;23;22"/>
+                  <animate attributeName="cy" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.26;0.38;0.88;1" values="25;25;16;16;25"/>
+                  <animate attributeName="opacity" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.38;0.46;0.88;1" values="1;1;0;0;1"/>
+                </circle>
+                <!-- n3 (32→41, 0.5에 정착) -->
+                <circle r="2.6" fill="currentColor">
+                  <animate attributeName="cx" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.38;0.5;0.88;1" values="32;32;41;41;32"/>
+                  <animate attributeName="cy" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.38;0.5;0.88;1" values="5;5;16;16;5"/>
+                </circle>
+                <!-- n4 (42→41 흡수, 0.6) -->
+                <circle r="2.4" fill="currentColor">
+                  <animate attributeName="cx" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.5;0.6;0.88;1" values="42;42;41;41;42"/>
+                  <animate attributeName="cy" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.5;0.6;0.88;1" values="26;26;16;16;26"/>
+                  <animate attributeName="opacity" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.6;0.68;0.88;1" values="1;1;0;0;1"/>
+                </circle>
+                <!-- n5 (50→58 흡수, 0.72) -->
+                <circle r="2.4" fill="currentColor">
+                  <animate attributeName="cx" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.6;0.72;0.88;1" values="50;50;58;58;50"/>
+                  <animate attributeName="cy" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.6;0.72;0.88;1" values="7;7;16;16;7"/>
+                  <animate attributeName="opacity" dur="3.6s" repeatCount="indefinite" keyTimes="0;0.72;0.8;0.88;1" values="1;1;0;0;1"/>
+                </circle>
+              </svg>
+            </div>
+            <div class="dtxt">
+              <div class="dhead"><span class="dnum num">02</span><span class="dsep"></span><strong>병목 계량</strong></div>
+              <p class="dsub t-body-s">12가지 패턴과 대조해 시간·현금이 새는 곳을 나눠 계량합니다.</p>
+            </div>
+            <span class="dmeta">산출 — 병목 리포트</span>
+          </article>
+
+          <span class="darrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h9M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+
+          <article class="dcard">
+            <div class="dviz">
+              <svg class="ico ico-build" viewBox="0 0 48 32" aria-hidden="true">
+                <!-- 아래 두 칸이 먼저, 위 두 칸이 나중 — 아래에서부터 채워짐 -->
+                <rect class="bk k3" x="13" y="16" width="9" height="9" rx="1"/>
+                <rect class="bk k4" x="24" y="16" width="9" height="9" rx="1"/>
+                <rect class="bk k1" x="13" y="5"  width="9" height="9" rx="1"/>
+                <rect class="bk k2" x="24" y="5"  width="9" height="9" rx="1"/>
+              </svg>
+            </div>
+            <div class="dtxt">
+              <div class="dhead"><span class="dnum num">03</span><span class="dsep"></span><strong>시스템 만들기</strong></div>
+              <p class="dsub t-body-s">작은 단위부터 다시 설계하고, 2주 MVP로 데이터를 확보해 전체를 구현합니다.</p>
+            </div>
+            <span class="dmeta">산출 — 자동화 1개</span>
+          </article>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="cta-sec">
-  <h2 class="cta-title">지금 바로 데모를 확인하세요</h2>
-  <p class="cta-sub">샘플 기업 데이터로 온톨로지 대시보드를 직접 체험합니다</p>
-  <a class="cta-btn" href="/mock">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polygon points="6,4 12,8 6,12" fill="currentColor"/></svg>
-    데모 대시보드 열기
-  </a>
+<!-- ══ 철학 — 온톨로지와 Minimum Input ══ -->
+<section class="section">
+  <div class="wrap">
+    <div class="split">
+      <span class="t-label">원칙</span>
+      <div>
+        <div class="pviz">
+          <svg class="ico-loop" viewBox="0 0 56 56" aria-hidden="true">
+            <circle cx="28" cy="28" r="18" fill="none" stroke="var(--ds-line-strong)" stroke-width="1.3" stroke-dasharray="3 4"/>
+            <circle class="ln lp1" cx="28" cy="10" r="2.6"/>
+            <circle class="ln lp2" cx="46" cy="28" r="2.6"/>
+            <circle class="ln lp3" cx="28" cy="46" r="2.6"/>
+            <circle class="ln lp4" cx="10" cy="28" r="2.6"/>
+            <circle cx="28" cy="28" r="5" fill="var(--ds-brand)"/>
+            <circle class="orbit" r="3.2" fill="var(--ds-brand)">
+              <animateMotion dur="3.6s" repeatCount="indefinite" path="M28,10 A18,18 0 1,1 28,46 A18,18 0 1,1 28,10"/>
+            </circle>
+          </svg>
+        </div>
+        <h2 class="t-out-s">한 번 설정으로 <span style="color: var(--ds-brand)">스스로</span> 개선합니다</h2>
+        <p class="t-body" style="max-width: 560px; margin-top: 24px; color: var(--ds-muted);">
+          업무를 매번 다시 설명하는 회사는 요청마다 비용을 냅니다.
+          지도를 한 번 그려두면 모든 자동화·분석·보고가 같은 지도를 재사용합니다.
+          자동화가 돌기 시작하면 그 기록이 지도를 스스로 갱신합니다.
+          입력은 줄어들고 산출만 쌓입니다.
+        </p>
+      </div>
+    </div>
+  </div>
 </section>
 
-<footer>
-  <span class="foot-logo">업무 온톨로지</span>
-  <div class="foot-spacer"></div>
-  <span class="foot-text">© 2026 Jobslab. All rights reserved.</span>
-  <span class="foot-contact"><a href="mailto:contact@jobslab.dev">contact@jobslab.dev</a></span>
+<!-- ══ 온톨로지가 켜지면 — before/after 인터랙티브 ══ -->
+<section class="section" id="shift">
+  <div class="wrap">
+    <div class="split">
+      <span class="t-label">변화</span>
+      <div>
+        <h2 class="t-out-s">도입 전과 후,<br>같은 업무</h2>
+        <p class="t-body-s" style="margin-top: 16px; max-width: 520px;">재고 확인 요청 하나가 들어왔습니다. 시스템 도입 전과 후를 나란히 봅니다.</p>
+
+        <div class="compare">
+          <!-- AS-IS -->
+          <div class="lane">
+            <div class="lane-hd"><span class="lane-tag">AS-IS</span> 시스템 도입 전</div>
+            <ol class="track track-before">
+              <span class="progress"></span>
+              <li class="step"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">요청이 들어옵니다</span></li>
+              <li class="step bad"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">스프레드시트를 손으로 뒤집니다<em>대기</em></span></li>
+              <li class="step"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">다른 팀에 전화로 재고를 묻습니다</span></li>
+              <li class="step bad"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">승인권자를 기다립니다<em>대기</em></span></li>
+              <li class="step end-before"><span class="who who-wait">반나절</span><span class="s-body">그제서야 답이 나옵니다</span></li>
+            </ol>
+          </div>
+          <!-- TO-BE -->
+          <div class="lane">
+            <div class="lane-hd"><span class="lane-tag on">TO-BE</span> 시스템 도입 후 <span class="done-badge">완료</span></div>
+            <ol class="track track-after">
+              <span class="progress"></span>
+              <li class="step"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">요청이 들어옵니다</span></li>
+              <li class="step good"><span class="who who-a"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="4" width="9" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M7 4 V2" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="1.5" r="1" fill="currentColor"/><circle cx="5.2" cy="7.5" r=".9" fill="currentColor"/><circle cx="8.8" cy="7.5" r=".9" fill="currentColor"/></svg>에이전트</span><span class="s-body">지도를 읽고 재고를 즉시 확인합니다</span></li>
+              <li class="step good"><span class="who who-a"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="4" width="9" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M7 4 V2" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="1.5" r="1" fill="currentColor"/><circle cx="5.2" cy="7.5" r=".9" fill="currentColor"/><circle cx="8.8" cy="7.5" r=".9" fill="currentColor"/></svg>에이전트</span><span class="s-body">규칙대로 스스로 판단합니다</span></li>
+              <li class="step end-after"><span class="who who-now">즉시</span><span class="s-body">답이 나옵니다</span></li>
+              <li class="step wait-lane"><span class="who who-p"><svg class="wi" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 12.5 a4.5 4.5 0 0 1 9 0" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>사람</span><span class="s-body">판단이 필요한 일에만 손을 댑니다</span></li>
+            </ol>
+          </div>
+        </div>
+
+        <p class="shift-sum-one t-body">판단만 하면, 결과가 나옵니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CTA — 라이트 유지 ══ -->
+<section class="section cta">
+  <div class="wrap">
+    <div class="split">
+      <span class="t-label">시작</span>
+      <div>
+        <h2 class="t-out-m">지도부터<br>그려보세요</h2>
+        <div class="btns">
+          <a class="btn btn-primary" href="/mock">데모 대시보드 열기</a>
+          <a class="btn btn-secondary" href="/guide">인터뷰 가이드 보기</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <a class="wordmark" href="https://jobslab.dev"><span class="dot"></span><span class="en">jobslab</span></a>
+    <span class="tagline">Minimum Input. Maximum Output.</span>
+    <span class="t-body-s"><a href="mailto:contact@jobslab.dev" style="color: var(--ds-brand); text-decoration: none;">contact@jobslab.dev</a></span>
+  </div>
 </footer>
 
+<!-- ═══ 도입 문의 모달 (본진 jobslab.dev 폼 이식) ═══ -->
+<div class="modal-backdrop" id="inquiry-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inq-title">
+    <button class="modal-x" type="button" aria-label="닫기"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5"/></svg></button>
+    <h3 id="inq-title">도입 문의</h3>
+    <p class="t-body-s" style="margin-bottom: 24px; color: var(--ds-muted);">한 줄만 남겨주세요. 하루 안에 답합니다.</p>
+    <form id="inq-form">
+      <div class="field">
+        <label for="inq-name">이름</label>
+        <input id="inq-name" name="name" maxlength="80" autocomplete="name" placeholder="어떻게 불러드릴까요">
+      </div>
+      <div class="field">
+        <label for="inq-contact">연락처 *</label>
+        <input id="inq-contact" name="contact" required maxlength="120" autocomplete="email" placeholder="이메일 또는 전화번호">
+      </div>
+      <div class="field">
+        <label for="inq-message">문의 내용 *</label>
+        <textarea id="inq-message" name="message" required rows="4" maxlength="2000" placeholder="어떤 업무를 진단하고 싶은지, 한 줄이면 충분합니다"></textarea>
+      </div>
+      <input name="website" tabindex="-1" autocomplete="off" style="position:absolute; left:-9999px;" aria-hidden="true">
+      <input type="hidden" name="source" id="inq-source" value="ontology 도입문의">
+      <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">보내기</button>
+      <p class="inq-status" role="status"></p>
+    </form>
+  </div>
+</div>
+
+<script>
+// 색은 디자인 토큰에서 런타임으로 읽는다
+const css = getComputedStyle(document.documentElement);
+const v = n => css.getPropertyValue(n).trim();
+const C = { A: v('--ds-brand'), O: v('--ds-brand-soft'), E: v('--ds-brand-deep'), R: v('--ds-muted'), RU: v('--ds-faint'), B: v('--ds-err') };
+const T = { A: v('--ds-brand-tint'), O: v('--ds-bg'), E: v('--ds-bg'), R: v('--ds-bg'), RU: v('--ds-bg'), B: v('--ds-err-tint') };
+const NAME = { A:'행위자', O:'대상', E:'이벤트', R:'기록', RU:'규칙', B:'병목' };
+const RAD = { A:18, O:14, E:16, R:13, RU:13, B:20 };
+
+const nodes = [
+  { id:'A01', label:'영업팀', type:'A' }, { id:'A02', label:'생산관리팀', type:'A' }, { id:'A03', label:'구매팀', type:'A' },
+  { id:'O01', owner:'영업팀', label:'발주서', type:'O' }, { id:'O02', owner:'생산관리팀', label:'재고 장부', type:'O' }, { id:'O03', owner:'생산관리팀', label:'생산 일정표', type:'O' }, { id:'O04', owner:'구매팀', label:'거래명세서', type:'O' },
+  { id:'E01', owner:'영업팀', label:'발주 접수', type:'E' }, { id:'E02', owner:'생산관리팀', label:'재고 확인', type:'E' }, { id:'E03', owner:'생산관리팀', label:'생산일정 수립', type:'E' }, { id:'E04', owner:'생산관리팀', label:'출고 승인', type:'E' }, { id:'E05', owner:'구매팀', label:'대금 청구', type:'E' },
+  { id:'R01', owner:'생산관리팀', label:'재고부족 보고', type:'R' }, { id:'R02', owner:'영업팀', label:'납기 확인서', type:'R' },
+  { id:'RU01', owner:'구매팀', label:'재고 기준치 30%', type:'RU' }, { id:'RU02', owner:'생산관리팀', label:'이중 승인 의무', type:'RU' },
+  { id:'B01', owner:'생산관리팀', label:'수동 재고 조회', type:'B', loss:'시간 해방 레인 — 환산 가치 월 140만원' },
+  { id:'B02', owner:'생산관리팀', label:'승인 대기', type:'B', loss:'현금 누수 레인 — 납기 지연 3.2건/월' },
+];
+const links = [
+  { source:'A01', target:'E01', label:'만든다' }, { source:'E01', target:'O01', label:'만든다' },
+  { source:'A02', target:'E02', label:'확인한다' }, { source:'E02', target:'O02', label:'참조한다' },
+  { source:'E02', target:'R01', label:'적는다' }, { source:'E02', target:'RU01', label:'판단한다' },
+  { source:'E02', target:'B01', bt:true }, { source:'E03', target:'R01', label:'참조한다' },
+  { source:'A02', target:'E03', label:'만든다' }, { source:'E03', target:'O03', label:'적는다' },
+  { source:'A02', target:'E04', label:'승인한다' }, { source:'E04', target:'RU02', label:'판단한다' },
+  { source:'E04', target:'B02', bt:true }, { source:'E04', target:'R02', label:'만든다' },
+  { source:'A03', target:'E05', label:'요청한다' }, { source:'E05', target:'O04', label:'만든다' },
+  { source:'O04', target:'R02', label:'참조한다' },
+];
+
+const pgc = document.getElementById('pgc');
+const svg = d3.select('#pgraph');
+const tip = document.getElementById('ptip');
+let W = pgc.clientWidth, H = pgc.clientHeight;
+
+const g = svg.append('g');
+const sim = d3.forceSimulation(nodes)
+  .force('link', d3.forceLink(links).id(d=>d.id).distance(d=>(d.source.type==='B'||d.target.type==='B')?70:120).strength(0.5))
+  .force('charge', d3.forceManyBody().strength(d=>d.type==='B'?-620:-420))
+  .force('center', d3.forceCenter(W/2, H/2))
+  .force('collide', d3.forceCollide().radius(d=>RAD[d.type]+30))
+  .force('x', d3.forceX(()=>W/2).strength(0.04))
+  .force('y', d3.forceY(()=>H/2).strength(0.06));
+
+const linkSel = g.append('g').selectAll('line').data(links).join('line')
+  .attr('stroke', d=>d.bt ? C.B : v('--ds-line-strong'))
+  .attr('stroke-width', d=>d.bt ? 1.5 : 1.1)
+  .attr('stroke-dasharray', d=>d.bt ? '4 3' : null)
+  .attr('fill','none');
+
+const nodeSel = g.append('g').selectAll('g').data(nodes).join('g')
+  .attr('class','pnode').style('cursor','pointer')
+  .call(d3.drag()
+    .on('start',(e,d)=>{ if(!e.active) sim.alphaTarget(.3).restart(); d.fx=d.x; d.fy=d.y; })
+    .on('drag',(e,d)=>{ d.fx=e.x; d.fy=e.y; })
+    .on('end',(e,d)=>{ if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }))
+  .on('click',(e,d)=>{ e.stopPropagation(); focusNode(d); })
+  .on('mouseenter',(e,d)=>{
+    tip.style.opacity='1';
+    tip.innerHTML=`<strong style="color:${C[d.type]}">${d.label}</strong><br><span style="color:${v('--ds-faint')};font-size:10px">${d.id} · ${NAME[d.type]}</span>${d.loss?`<br><span style="color:${C.B};font-size:11px">${d.loss}</span>`:''}`;
+  })
+  .on('mousemove',e=>{
+    const r=pgc.getBoundingClientRect();
+    let x=e.clientX-r.left+12, y=e.clientY-r.top+12;
+    if(x+220>r.width) x-=235;
+    tip.style.left=x+'px'; tip.style.top=y+'px';
+  })
+  .on('mouseleave',()=>{ tip.style.opacity='0'; });
+
+nodeSel.append('circle')
+  .attr('r', d=>RAD[d.type]).attr('fill', d=>T[d.type])
+  .attr('stroke', d=>C[d.type]).attr('stroke-width', d=>d.type==='B'?2.2:1.7);
+nodeSel.append('text').text(d=>d.id)
+  .attr('font-family',"'Satoshi', sans-serif").attr('font-weight','700')
+  .attr('font-size', d=>d.type==='RU'?'8px':'9px').attr('fill', d=>C[d.type]);
+nodeSel.filter(d=>d.owner).append('text').attr('class','powner')
+  .attr('dy', d=>RAD[d.type]+12).text(d=>d.owner);
+const pn = nodeSel.append('text').attr('class','plbl')
+  .attr('dy', d=>d.owner ? RAD[d.type]+25 : RAD[d.type]+13).text(d=>d.label);
+pn.filter(d=>d.type==='B').attr('fill', C.B);
+
+svg.on('click', ()=>{ nodeSel.classed('pdim',false); linkSel.classed('pdim',false); });
+
+function focusNode(d){
+  nodeSel.classed('pdim', n=>!(n.id===d.id || links.some(l=>(l.source.id===d.id&&l.target.id===n.id)||(l.target.id===d.id&&l.source.id===n.id))));
+  linkSel.classed('pdim', l=>l.source.id!==d.id&&l.target.id!==d.id);
+}
+
+sim.on('tick', ()=>{
+  nodes.forEach(d=>{ const r=RAD[d.type]+18; d.x=Math.max(r,Math.min(W-r,d.x)); d.y=Math.max(r,Math.min(H-r-8,d.y)); });
+  linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  nodeSel.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+function fit(){ W=pgc.clientWidth; H=pgc.clientHeight; svg.attr('width',W).attr('height',H); sim.force('center',d3.forceCenter(W/2,H/2)).alpha(.2).restart(); }
+fit();
+window.addEventListener('resize', fit);
+
+// reduced-motion이면 병목 아이콘 SMIL 정지
+if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.querySelectorAll('.ico-scan').forEach(s => s.pauseAnimations && s.pauseAnimations());
+}
+
+// ── AS-IS / TO-BE 좌우 동시 진행 (TO-BE 먼저 완료 → AS-IS 기다림) ──
+const shift = document.querySelector('#shift');
+const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let flowTimers = [];
+function clearFlow() { flowTimers.forEach(clearTimeout); flowTimers = []; }
+
+function fillTo(progress, step) {
+  progress.style.height = (step.offsetTop + step.offsetHeight / 2 - 4) + 'px';
+}
+
+function runLane(track, normal, bad, onDone) {
+  const steps = [...track.querySelectorAll('.step')];
+  const progress = track.querySelector('.progress');
+  let i = 0;
+  function step() {
+    const cur = steps[i];
+    cur.classList.add('active');
+    fillTo(progress, cur);
+    const dwell = cur.classList.contains('bad') ? bad : normal;
+    i++;
+    if (i < steps.length) flowTimers.push(setTimeout(step, dwell));
+    else if (onDone) onDone();
+  }
+  step();
+}
+
+function playCompare() {
+  clearFlow();
+  const before = shift.querySelector('.track-before');
+  const after = shift.querySelector('.track-after');
+  shift.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  shift.querySelectorAll('.progress').forEach(p => { p.style.transition = ''; p.style.height = '0'; });
+  shift.querySelectorAll('.track').forEach(t => t.classList.remove('done'));
+  shift.querySelectorAll('.lane').forEach(l => l.classList.remove('lane-done'));
+
+  if (reduce) {
+    shift.querySelectorAll('.step').forEach(s => s.classList.add('active'));
+    shift.querySelectorAll('.track').forEach(t => { const ss = t.querySelectorAll('.step'); fillTo(t.querySelector('.progress'), ss[ss.length-1]); });
+    return;
+  }
+
+  // TO-BE는 빠르게 완주 후 완료 알림 + 그대로 대기 / AS-IS는 병목에서 지연되며 느리게
+  runLane(after, 560, 560, () => {
+    after.classList.add('done');
+    after.closest('.lane').classList.add('lane-done');
+  });
+  runLane(before, 760, 1500, () => {
+    // 느린 쪽(AS-IS)까지 끝나면 잠깐 유지 후 리셋 → 반복
+    flowTimers.push(setTimeout(() => {
+      shift.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      shift.querySelectorAll('.progress').forEach(p => { p.style.transition = 'none'; p.style.height = '0'; });
+      flowTimers.push(setTimeout(playCompare, 450));
+    }, 1900));
+  });
+}
+
+const shiftObs = new IntersectionObserver((es) => {
+  es.forEach(e => { if (e.isIntersecting) { playCompare(); shiftObs.disconnect(); } });
+}, { threshold: 0.25 });
+shiftObs.observe(shift);
+
+// ── 도입 문의 모달 (본진 jobslab.dev API 재사용) ──
+const CONTACT_API = 'https://jobslab.dev/api/contact';
+const mb = document.getElementById('inquiry-modal');
+const inqForm = document.getElementById('inq-form');
+const inqStatus = inqForm.querySelector('.inq-status');
+let inqPrevFocus = null;
+const openModal = (e) => {
+  if (e) e.preventDefault();
+  inqPrevFocus = document.activeElement;
+  mb.hidden = false;
+  requestAnimationFrame(() => mb.classList.add('on'));
+  document.body.classList.add('modal-open');
+  setTimeout(() => document.getElementById('inq-name').focus(), 260);
+};
+const closeModal = () => {
+  mb.classList.remove('on');
+  document.body.classList.remove('modal-open');
+  setTimeout(() => { mb.hidden = true; }, 250);
+  if (inqPrevFocus) inqPrevFocus.focus();
+};
+document.querySelectorAll('.inq-open').forEach(b => b.addEventListener('click', openModal));
+mb.addEventListener('click', e => { if (e.target === mb || e.target.closest('.modal-x')) closeModal(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !mb.hidden) closeModal(); });
+inqForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = inqForm.querySelector('button[type=submit]');
+  btn.disabled = true;
+  inqStatus.style.color = 'var(--ds-muted)';
+  inqStatus.textContent = '보내는 중…';
+  try {
+    const res = await fetch(CONTACT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(new FormData(inqForm))),
+    });
+    if (!res.ok) throw new Error();
+    inqStatus.style.color = 'var(--ds-ok)';
+    inqStatus.textContent = '접수됐습니다. 하루 안에 연락드릴게요.';
+    inqForm.reset();
+    setTimeout(closeModal, 1800);
+  } catch {
+    inqStatus.style.color = 'var(--ds-err)';
+    inqStatus.textContent = '전송에 실패했어요. 잠시 후 다시 시도하거나 contact@jobslab.dev로 보내주세요.';
+  }
+  btn.disabled = false;
+});
+</script>
 </body>
 </html>

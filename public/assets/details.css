@@ -1,0 +1,42 @@
+/* 마감 디테일 팩 — 전제: tokens.css → design-system.css 뒤에 로드.
+   색·둥글기는 전부 토큰 변수 참조(hex/단위없는px 금지) → 라이트/다크 자동 전환. */
+
+/* detail:selection */
+::selection { background: var(--ds-brand); color: var(--ds-on-brand); }
+
+/* detail:focus-ring */
+:focus-visible { outline: 2px solid var(--ds-brand); outline-offset: 2px; }
+
+/* detail:scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--ds-bg); }
+::-webkit-scrollbar-thumb { background: var(--ds-muted); border-radius: var(--radius-base); }
+
+/* detail:spinner */
+.ds-spinner { width: 24px; height: 24px; border: 3px solid var(--ds-surface); border-top-color: var(--ds-brand); border-radius: 50%; animation: ds-spin .8s linear infinite; }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+/* detail:skeleton */
+.ds-skeleton { background: linear-gradient(90deg, var(--ds-surface) 25%, var(--ds-bg) 50%, var(--ds-surface) 75%); background-size: 200% 100%; animation: ds-skeleton 1.5s ease infinite; border-radius: var(--radius-base); }
+@keyframes ds-skeleton { to { background-position: -200% 0; } }
+
+/* detail:fade-in */
+.ds-fade-in { animation: ds-fade-in .3s ease both; }
+@keyframes ds-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* detail:press */
+.ds-press { transition: transform .1s ease; }
+.ds-press:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-spinner, .ds-skeleton, .ds-fade-in { animation: none; }
+  .ds-press { transition: none; }
+}
+
+/* logo motion preset: fade (detail-pack 정본) */
+.logo-fade { animation: logo-fade 0.8s ease-in-out both; }
+@keyframes logo-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-fade { animation: none; }
+}

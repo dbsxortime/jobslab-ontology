@@ -4,39 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>온톨로지 인터뷰 가이드</title>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://api.fontshare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/design-system.css">
+  <link rel="stylesheet" href="/assets/details.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #FFFFFF;
-      --bg-subtle:   #FAFAFA;
-      --bg-hover:    #F4F4F4;
-      --text-1:      #111111;
-      --text-2:      #555555;
-      --text-3:      #999999;
-      --line:        rgba(0,0,0,0.07);
-      --line-2:      rgba(0,0,0,0.12);
-      --brand:       #1C2E72;
-      --brand-hover: #16255C;
-      --brand-light: #EEF2FF;
-      --brand-mid:   rgba(28,46,114,0.12);
-      --radius:      10px;
-      --shadow:      0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md:   0 4px 12px rgba(0,0,0,0.10);
+      --bg:          var(--ds-bg);
+      --bg-subtle:   var(--ds-surface);
+      --bg-hover:    var(--ds-brand-tint);
+      --text-1:      var(--ds-ink);
+      --text-2:      var(--ds-muted);
+      --text-3:      var(--ds-faint);
+      --line:        var(--ds-line);
+      --line-2:      var(--ds-line-strong);
+      --brand:       var(--ds-brand);
+      --brand-hover: var(--ds-brand-deep);
+      --brand-light: var(--ds-brand-tint);
+      --brand-mid:   var(--ds-line-strong);
+      --radius:      var(--radius-base);
+      --shadow:      none;
+      --shadow-md:   none;
 
-      /* Node type colors */
-      --color-A:  #2563EB; --color-A-bg: rgba(37,99,235,0.08);
-      --color-O:  #0D9488; --color-O-bg: rgba(13,148,136,0.08);
-      --color-E:  #D97706; --color-E-bg: rgba(217,119,6,0.08);
-      --color-R:  #7C3AED; --color-R-bg: rgba(124,58,237,0.08);
-      --color-RU: #16A34A; --color-RU-bg: rgba(22,163,74,0.08);
-      --color-B:  #DC2626; --color-B-bg: rgba(220,38,38,0.08);
+      /* 노드 유형 = 브랜드 농도 단계, 병목만 semantic error */
+      --color-A:  var(--ds-brand);      --color-A-bg: var(--ds-brand-tint);
+      --color-O:  var(--ds-brand-soft); --color-O-bg: var(--ds-surface);
+      --color-E:  var(--ds-brand-deep); --color-E-bg: var(--ds-surface);
+      --color-R:  var(--ds-muted);      --color-R-bg: var(--ds-surface);
+      --color-RU: var(--ds-faint);      --color-RU-bg: var(--ds-surface);
+      --color-B:  var(--ds-err);        --color-B-bg: var(--ds-err-tint);
     }
 
     body {
-      font-family: 'Pretendard Variable', -apple-system, sans-serif;
+      font-family: 'Wanted Sans Variable', 'Wanted Sans', sans-serif;
       background: var(--bg-subtle);
       color: var(--text-1);
       height: 100dvh;
@@ -68,7 +73,7 @@
     .header-brand .logo {
       width: 28px; height: 28px;
       background: var(--brand);
-      border-radius: 6px;
+      border-radius: var(--radius-base);
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-size: 14px; font-weight: 700;
     }
@@ -86,7 +91,7 @@
     }
     .stage-item {
       padding: 4px 12px;
-      border-radius: 20px;
+      border-radius: var(--radius-base);
       font-size: 12px;
       font-weight: 500;
       color: var(--text-3);
@@ -159,7 +164,7 @@
 
     .bubble {
       padding: 12px 16px;
-      border-radius: 14px;
+      border-radius: var(--radius-base);
       max-width: 80%;
       line-height: 1.6;
       font-size: 14px;
@@ -167,13 +172,13 @@
     .message.ai .bubble {
       background: var(--bg-subtle);
       border: 1px solid var(--line);
-      border-radius: 4px 14px 14px 14px;
+      border-radius: var(--radius-base);
       color: var(--text-1);
     }
     .message.user .bubble {
       background: var(--brand);
       color: #fff;
-      border-radius: 14px 4px 14px 14px;
+      border-radius: var(--radius-base);
     }
 
     .insight-chip {
@@ -181,7 +186,7 @@
       padding: 6px 12px;
       background: rgba(28,46,114,0.06);
       border: 1px solid var(--brand-mid);
-      border-radius: 20px;
+      border-radius: var(--radius-base);
       font-size: 12px;
       color: var(--brand);
       display: inline-block;
@@ -216,7 +221,7 @@
       flex: 1;
       resize: none;
       border: 1px solid var(--line-2);
-      border-radius: 10px;
+      border-radius: var(--radius-base);
       padding: 10px 14px;
       font-family: inherit;
       font-size: 14px;
@@ -234,7 +239,7 @@
     #sendBtn {
       width: 42px; height: 42px; flex-shrink: 0;
       background: var(--brand);
-      color: #fff; border: none; border-radius: 10px;
+      color: #fff; border: none; border-radius: var(--radius-base);
       cursor: pointer; display: flex;
       align-items: center; justify-content: center;
       transition: background 0.15s;
@@ -264,13 +269,13 @@
     }
     .node-count {
       font-size: 11px; padding: 2px 8px;
-      border-radius: 20px; font-weight: 600;
+      border-radius: var(--radius-base); font-weight: 600;
     }
 
     #exportBtn {
       padding: 6px 14px;
       background: var(--brand);
-      color: #fff; border: none; border-radius: 8px;
+      color: #fff; border: none; border-radius: var(--radius-base);
       cursor: pointer; font-size: 12px; font-weight: 500;
       font-family: inherit;
       transition: background 0.15s;
@@ -302,7 +307,7 @@
     }
     .node-type-badge {
       width: 22px; height: 22px;
-      border-radius: 6px;
+      border-radius: var(--radius-base);
       display: flex; align-items: center; justify-content: center;
       font-size: 10px; font-weight: 700;
       flex-shrink: 0;
@@ -313,7 +318,7 @@
       margin-left: auto;
       font-size: 11px; font-weight: 600;
       min-width: 18px; height: 18px;
-      border-radius: 9px;
+      border-radius: var(--radius-base);
       display: flex; align-items: center; justify-content: center;
       padding: 0 5px;
     }
@@ -399,7 +404,7 @@
     .intro-icon {
       width: 64px; height: 64px;
       background: var(--brand);
-      border-radius: 16px;
+      border-radius: var(--radius-base);
       display: flex; align-items: center; justify-content: center;
       margin: 0 auto 24px;
       font-size: 28px;
@@ -414,7 +419,7 @@
       flex: 1;
       background: var(--bg-subtle);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: var(--radius-base);
       padding: 12px;
     }
     .intro-stage-num {
@@ -433,7 +438,7 @@
       width: 100%;
       padding: 10px 14px;
       border: 1px solid var(--line-2);
-      border-radius: 8px;
+      border-radius: var(--radius-base);
       font-family: inherit; font-size: 14px;
       color: var(--text-1); background: var(--bg);
       outline: none; transition: border-color 0.15s;
@@ -444,7 +449,7 @@
       width: 100%;
       padding: 13px;
       background: var(--brand);
-      color: #fff; border: none; border-radius: 10px;
+      color: #fff; border: none; border-radius: var(--radius-base);
       font-family: inherit; font-size: 15px; font-weight: 600;
       cursor: pointer; transition: background 0.15s;
     }
@@ -456,9 +461,9 @@
       padding: 12px 16px;
       background: rgba(22,163,74,0.08);
       border: 1px solid rgba(22,163,74,0.2);
-      border-radius: 8px;
+      border-radius: var(--radius-base);
       font-size: 13px;
-      color: #16A34A;
+      color: var(--ds-ok);
       margin: 0 24px 12px;
       text-align: center;
     }
@@ -476,7 +481,7 @@
   <!-- Intro screen -->
   <div class="intro-screen" id="introScreen">
     <div class="intro-card">
-      <div class="intro-icon">🗂️</div>
+      <div class="intro-icon" aria-hidden="true"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#fff;"></span></div>
       <h1>온톨로지 인터뷰</h1>
       <p>회사 업무 구조를 대화를 통해 함께 그려갑니다.<br>
          자유롭게 답변하시면 AI가 핵심 요소를 추출합니다.</p>
@@ -678,7 +683,7 @@
 
       if (!res.ok) {
         const err = await res.text();
-        appendMessage('ai', '⚠️ 오류가 발생했습니다. 다시 시도해주세요.\n' + err);
+        appendMessage('ai', '오류가 발생했습니다. 다시 시도해주세요.\n' + err);
         return;
       }
 
@@ -714,7 +719,7 @@
       }
 
     } catch (e) {
-      appendMessage('ai', '⚠️ 네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+      appendMessage('ai', '네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       if (typingEl) typingEl.remove();
       sendBtn.disabled = state.complete;

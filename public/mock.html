@@ -3,344 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>업무 온톨로지 대시보드 — 데모</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<title>온톨로지 대시보드 — 데모 | jobslab</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="/assets/tokens.css">
+<link rel="stylesheet" href="/assets/design-system.css">
+<link rel="stylesheet" href="/assets/details.css">
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #0A0D14; --bg2: #111520; --bg3: #1A1F2E; --bg4: #222840;
-  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
-  --text: #E5E7EB; --text2: #9CA3AF; --text3: #6B7280;
-  --brand: #4F7BF7;
-  --cA: #60A5FA; --cO: #A78BFA; --cE: #F59E0B;
-  --cR: #34D399; --cRU: #4ADE80; --cB: #F87171;
-  --red: #F87171; --green: #34D399;
-}
+/* 대시보드 전용 — 전부 --ds-* 토큰 참조 */
 html, body { height: 100%; overflow: hidden; }
-body {
-  font-family: 'Pretendard Variable', -apple-system, sans-serif;
-  background: var(--bg); color: var(--text);
-  display: flex; flex-direction: column; font-size: 13px;
-}
+body { display: flex; flex-direction: column; font-size: 14px; }
 
-/* Header */
-header {
-  height: 52px; background: var(--bg2); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0;
+/* 상단 바 */
+.topbar {
+  height: 56px; border-bottom: 1px solid var(--ds-line); background: var(--ds-bg);
+  display: flex; align-items: center; padding: 0 20px; gap: 14px; flex-shrink: 0;
 }
-.logo {
-  display: flex; align-items: center; gap: 8px;
-  font-weight: 700; font-size: 15px; color: var(--text);
-  text-decoration: none; white-space: nowrap;
-}
-.logo svg { color: var(--brand); }
-.demo-badge {
-  background: rgba(79,123,247,0.15); color: var(--brand);
-  border: 1px solid rgba(79,123,247,0.3); border-radius: 4px;
-  padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-}
-.sep { color: var(--border2); }
-.company-pill {
-  background: var(--bg3); border: 1px solid var(--border2);
-  border-radius: 6px; padding: 4px 12px; font-size: 13px; cursor: pointer;
-  display: flex; align-items: center; gap: 8px; color: var(--text);
-}
-.company-pill small { color: var(--text3); font-size: 11px; }
-.spacer { flex: 1; }
-.period-btn {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
-  padding: 4px 10px; color: var(--text2); font-size: 12px; cursor: pointer;
-}
-.h-btn {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
-  padding: 4px 12px; color: var(--text2); font-size: 12px; cursor: pointer;
-  display: flex; align-items: center; gap: 5px; text-decoration: none;
-}
-.h-btn:hover { color: var(--text); border-color: var(--border2); }
+.topbar .wordmark { font-size: 16px; }
+.tenant { display: inline-flex; align-items: baseline; gap: 8px; padding: 6px 12px; border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); font-size: 14px; }
+.tenant .t-label { font-size: 12px; }
+.top-spacer { flex: 1; }
+.top-link { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--ds-muted); text-decoration: none; padding: 8px 10px; }
+.top-link:hover { color: var(--ds-brand); }
 
-/* Layout */
+/* 본문 레이아웃 */
 .main { flex: 1; display: flex; overflow: hidden; }
-
-/* Graph panel */
-.graph-panel {
-  flex: 1.65; display: flex; flex-direction: column;
-  border-right: 1px solid var(--border); overflow: hidden; min-width: 0;
-}
-.graph-toolbar {
-  height: 40px; background: var(--bg2); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 12px; gap: 5px; flex-shrink: 0;
+.graph-panel { flex: 1.65; display: flex; flex-direction: column; border-right: 1px solid var(--ds-line); min-width: 0; background: var(--ds-surface); }
+.toolbar {
+  height: 44px; background: var(--ds-bg); border-bottom: 1px solid var(--ds-line);
+  display: flex; align-items: center; padding: 0 14px; gap: 6px; flex-shrink: 0;
 }
 .t-btn {
-  width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 5px;
-  background: var(--bg3); color: var(--text2); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 600;
+  width: 28px; height: 28px; border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base);
+  background: var(--ds-bg); color: var(--ds-muted); cursor: pointer; font-size: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.t-btn:hover { color: var(--text); border-color: var(--border2); }
-.t-sep { width: 1px; height: 16px; background: var(--border); margin: 0 3px; }
+.t-btn:hover { color: var(--ds-brand); border-color: var(--ds-brand); }
+.t-sep { width: 1px; height: 16px; background: var(--ds-line); margin: 0 4px; }
 .chip {
-  display: flex; align-items: center; gap: 4px; padding: 3px 8px;
-  border-radius: 10px; border: 1px solid transparent;
-  cursor: pointer; font-size: 11px; font-weight: 600;
-  opacity: 0.55; transition: opacity 0.15s; user-select: none;
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+  border: 1px solid transparent; border-radius: var(--radius-base);
+  cursor: pointer; font-size: 12px; font-weight: 500; color: var(--ds-muted);
+  opacity: .45; user-select: none; transition: opacity .15s ease;
 }
-.chip.on { opacity: 1; border-color: currentColor; }
-.chip .d { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.chip-A{color:var(--cA)} .chip-O{color:var(--cO)} .chip-E{color:var(--cE)}
-.chip-R{color:var(--cR)} .chip-RU{color:var(--cRU)} .chip-B{color:var(--cB)}
+.chip.on { opacity: 1; border-color: var(--ds-line-strong); }
+.chip .d { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .t-spacer { flex: 1; }
-.fit-btn {
-  padding: 3px 10px; border: 1px solid var(--border); border-radius: 5px;
-  background: var(--bg3); color: var(--text2); cursor: pointer; font-size: 11px;
-}
-.fit-btn:hover { color: var(--text); }
+.fit-btn { padding: 4px 12px; border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); background: var(--ds-bg); color: var(--ds-muted); cursor: pointer; font-size: 12px; }
+.fit-btn:hover { color: var(--ds-brand); border-color: var(--ds-brand); }
 
-#gc { flex: 1; position: relative; overflow: hidden; background: var(--bg); }
+#gc { flex: 1; position: relative; overflow: hidden; }
 #graph { width: 100%; height: 100%; cursor: grab; }
 #graph:active { cursor: grabbing; }
 
 .graph-legend {
-  position: absolute; bottom: 14px; left: 14px;
-  background: rgba(17,21,32,0.92); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 8px 12px; display: flex; flex-wrap: wrap;
-  gap: 7px 14px; backdrop-filter: blur(8px);
+  position: absolute; bottom: 14px; left: 14px; background: var(--ds-bg);
+  border: 1px solid var(--ds-line); border-radius: var(--radius-base);
+  padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 16px;
 }
-.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.leg-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ds-muted); }
 .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 #tip {
-  position: absolute; pointer-events: none; background: var(--bg3);
-  border: 1px solid var(--border2); border-radius: 7px; padding: 8px 12px;
-  font-size: 12px; line-height: 1.6; max-width: 210px; opacity: 0;
-  transition: opacity 0.12s; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  position: absolute; pointer-events: none; background: var(--ds-bg);
+  border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base);
+  padding: 10px 12px; font-size: 12px; line-height: 1.6; max-width: 220px;
+  opacity: 0; transition: opacity .12s ease; z-index: 100;
 }
 
-/* Side panel */
-.side-panel {
-  width: 336px; flex-shrink: 0; display: flex; flex-direction: column;
-  overflow: hidden; background: var(--bg2);
-}
-.psec { border-bottom: 1px solid var(--border); flex-shrink: 0; }
+/* 우측 패널 */
+.side { width: 336px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--ds-bg); }
+.psec { border-bottom: 1px solid var(--ds-line); flex-shrink: 0; }
 .psec.grow { flex: 1; overflow-y: auto; min-height: 0; }
-.psec::-webkit-scrollbar { width: 4px; }
-.psec::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+.sec-hdr { display: flex; align-items: center; gap: 8px; padding: 14px 16px 10px; }
+.sec-hdr .nbadge { background: var(--ds-err-tint); color: var(--ds-err); border-radius: var(--radius-base); padding: 1px 8px; font-size: 12px; font-weight: 700; }
 
-.sec-hdr {
-  display: flex; align-items: center; gap: 7px; padding: 11px 16px 8px;
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.08em; color: var(--text3);
-}
-.sec-hdr .nbadge {
-  background: rgba(248,113,113,0.15); color: var(--red);
-  border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700;
-}
+/* 병목 로우 — hairline, 좌측 컬러 보더 금지 */
+.bn { margin: 0 16px; padding: 12px 0; border-top: 1px solid var(--ds-line); cursor: pointer; }
+.bn:first-of-type { border-top: 0; }
+.bn:hover .bn-name, .bn.active .bn-name { color: var(--ds-err); }
+.bn-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+.bn-name { font-size: 14px; font-weight: 700; transition: color .15s ease; }
+.pat { font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--ds-err); background: var(--ds-err-tint); border-radius: var(--radius-base); padding: 2px 8px; white-space: nowrap; }
+.bn-mets { display: flex; gap: 6px; }
+.bn-met { flex: 1; background: var(--ds-surface); border-radius: var(--radius-base); padding: 7px 9px; }
+.met-lbl { font-size: 12px; color: var(--ds-faint); margin-bottom: 2px; }
+.met-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.met-val.r { color: var(--ds-err); }
+.bn-desc { margin-top: 8px; font-size: 12px; color: var(--ds-muted); line-height: 1.6; }
+.bn-lane { font-size: 12px; font-weight: 500; color: var(--ds-brand); margin-bottom: 8px; }
 
-/* Bottleneck cards */
-.bn {
-  margin: 0 12px 10px; background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.15s;
-}
-.bn:hover, .bn.active { border-color: var(--cB); background: rgba(248,113,113,0.08); }
-.bn-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.bn-title { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; }
-.pulse {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--cB); flex-shrink: 0;
-  animation: pulse 1.8s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(248,113,113,.4); }
-  50% { opacity:.8; transform:scale(1.2); box-shadow:0 0 0 6px rgba(248,113,113,0); }
-}
-.pat-tag {
-  background: rgba(248,113,113,0.12); color: var(--red);
-  border: 1px solid rgba(248,113,113,0.25); border-radius: 4px;
-  padding: 1px 6px; font-size: 10px; font-weight: 700;
-}
-.bn-mets { display: flex; gap: 7px; }
-.bn-met { flex: 1; background: var(--bg); border-radius: 5px; padding: 6px 8px; }
-.met-lbl { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
-.met-val { font-size: 12px; font-weight: 600; }
-.met-val.r { color: var(--red); }
-.bn-desc { margin-top: 8px; font-size: 11px; color: var(--text2); line-height: 1.6; }
-
-/* Node detail */
-.nd { padding: 12px 16px; }
-.nd-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 110px; color: var(--text3); font-size: 12px; gap: 6px; text-align: center;
-}
+/* 노드 상세 */
+.nd { padding: 12px 16px 16px; }
+.nd-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 110px; color: var(--ds-faint); font-size: 12px; gap: 8px; text-align: center; }
 .nd-content { display: none; }
 .nd-content.vis { display: block; }
-.type-badge {
-  display: inline-flex; align-items: center; border-radius: 4px;
-  padding: 2px 8px; font-size: 11px; font-weight: 600; margin-bottom: 8px;
-}
-.nd-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.nd-id { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
-.nd-desc { font-size: 12px; color: var(--text2); line-height: 1.65; margin-bottom: 10px; }
-.conn-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 6px; }
+.type-badge { display: inline-block; border-radius: var(--radius-base); padding: 2px 10px; font-size: 12px; font-weight: 500; margin-bottom: 10px; }
+.nd-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.nd-id { font-family: 'Satoshi', sans-serif; font-size: 12px; color: var(--ds-faint); margin-bottom: 10px; }
+.nd-desc { font-size: 13px; color: var(--ds-muted); line-height: 1.65; margin-bottom: 12px; }
+.conn-lbl { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ds-faint); margin-bottom: 6px; }
 .conns { display: flex; flex-wrap: wrap; gap: 5px; }
-.conn-chip {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
-  padding: 2px 8px; font-size: 11px; color: var(--text2); cursor: pointer;
-}
-.conn-chip:hover { color: var(--text); }
+.conn-chip { border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); padding: 2px 9px; font-size: 12px; color: var(--ds-muted); cursor: pointer; background: var(--ds-bg); }
+.conn-chip:hover { color: var(--ds-brand); border-color: var(--ds-brand); }
 
-/* ROI */
-.roi { padding: 12px 16px 14px; }
-.roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.roi-card {
-  background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px;
-}
-.roi-card.hi { border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
-.r-lbl { font-size: 10px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
-.r-val { font-size: 17px; font-weight: 700; line-height: 1.2; }
-.r-val .u { font-size: 11px; font-weight: 400; color: var(--text2); }
-.r-val.g { color: var(--green); }
-.r-val.r { color: var(--red); }
-.r-sub { font-size: 10px; color: var(--text3); margin-top: 3px; }
+/* 개선 효과 — 데모 명시 */
+.roi { padding: 4px 16px 16px; }
+.roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--ds-line); border: 1px solid var(--ds-line); }
+.roi-cell { background: var(--ds-bg); padding: 12px 14px; }
+.r-lbl { font-size: 12px; color: var(--ds-faint); margin-bottom: 4px; }
+.r-val { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.r-val .u { font-size: 12px; font-weight: 400; color: var(--ds-muted); }
+.r-val.good { color: var(--ds-ok); }
+.r-val.bad { color: var(--ds-err); }
+.r-sub { font-size: 12px; color: var(--ds-faint); margin-top: 3px; }
 
-/* Footer */
-footer {
-  height: 38px; background: var(--bg2); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 20px; gap: 0; flex-shrink: 0;
-}
-.st {
-  display: flex; align-items: center; gap: 6px; padding: 0 16px;
-  border-right: 1px solid var(--border); font-size: 12px; color: var(--text2);
-}
+/* 하단 바 */
+.statusbar { height: 40px; border-top: 1px solid var(--ds-line); background: var(--ds-bg); display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; }
+.st { display: inline-flex; align-items: baseline; gap: 6px; padding: 0 16px; border-right: 1px solid var(--ds-line); font-size: 12px; color: var(--ds-muted); }
 .st:first-child { padding-left: 0; }
-.st:last-child { border-right: none; }
-.st-lbl { color: var(--text3); font-size: 11px; }
-.st-val { font-weight: 600; }
-.st-val.r { color: var(--red); }
-.st-val.g { color: var(--green); }
+.st-val { font-weight: 700; color: var(--ds-ink); font-variant-numeric: tabular-nums; }
+.st-val.r { color: var(--ds-err); }
+.st-val.g { color: var(--ds-ok); }
 .f-spacer { flex: 1; }
-.notice {
-  font-size: 11px; color: var(--text3);
-  background: rgba(79,123,247,0.08); border: 1px solid rgba(79,123,247,0.15);
-  border-radius: 4px; padding: 2px 9px;
-}
+.notice { font-size: 12px; color: var(--ds-muted); background: var(--ds-brand-tint); border-radius: var(--radius-base); padding: 3px 10px; }
 
 /* D3 */
-.node circle { stroke-width: 2; }
-.node text {
-  pointer-events: none; font-family: 'Pretendard Variable', sans-serif;
-  font-size: 10px; fill: #E5E7EB; text-anchor: middle; dominant-baseline: central;
-}
-.link { stroke: rgba(255,255,255,0.14); stroke-width: 1.2; fill: none; }
-.link.bt { stroke: rgba(248,113,113,0.4); stroke-dasharray: 4 3; }
-.linklbl {
-  font-family: 'Pretendard Variable', sans-serif; font-size: 9px;
-  fill: rgba(156,163,175,0.6); text-anchor: middle; pointer-events: none;
-}
-.node-B circle { animation: npulse 2s ease-in-out infinite; }
-@keyframes npulse {
-  0%,100% { filter: drop-shadow(0 0 4px rgba(248,113,113,.5)); }
-  50% { filter: drop-shadow(0 0 14px rgba(248,113,113,.95)); }
-}
-.dimmed { opacity: 0.12; }
+.node text { pointer-events: none; font-family: 'Wanted Sans Variable', sans-serif; font-size: 10px; text-anchor: middle; dominant-baseline: central; }
+.node .nlbl { fill: var(--ds-ink); font-weight: 600; }
+.node .nowner { fill: var(--ds-faint); font-size: 9px; font-weight: 500; }
+.link { fill: none; }
+.linklbl { font-family: 'Wanted Sans Variable', sans-serif; font-size: 9px; fill: var(--ds-faint); text-anchor: middle; pointer-events: none; }
+.dimmed { opacity: .12; }
 </style>
 </head>
 <body>
 
-<header>
-  <a class="logo" href="/">
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <circle cx="9" cy="4" r="3" fill="currentColor" opacity=".9"/>
-      <circle cx="3" cy="14" r="2.5" fill="currentColor" opacity=".6"/>
-      <circle cx="15" cy="14" r="2.5" fill="currentColor" opacity=".6"/>
-      <line x1="9" y1="7" x2="3" y2="11.5" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
-      <line x1="9" y1="7" x2="15" y2="11.5" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
-      <line x1="3" y1="14" x2="15" y2="14" stroke="currentColor" stroke-width="1.2" opacity=".5"/>
-    </svg>
-    업무 온톨로지
-  </a>
-  <span class="sep">|</span>
-  <span class="demo-badge">DEMO</span>
-  <div class="company-pill"><small>분석 대상</small> ㈜한솔제조 ▾</div>
-  <div class="spacer"></div>
-  <div class="period-btn">2026 Q2 · 4–6월 ▾</div>
-  <a href="/" class="h-btn" style="color:var(--text2)">← 서비스 소개</a>
+<header class="topbar">
+  <a class="wordmark" href="/"><span class="dot"></span><span class="en">ontology</span></a>
+  <span class="badge">데모</span>
+  <span class="tenant"><span class="t-label">분석 대상</span>가상 제조기업 A</span>
+  <div class="top-spacer"></div>
+  <a class="top-link" href="/">서비스 소개</a>
+  <a class="top-link" href="/guide">인터뷰 가이드</a>
 </header>
 
 <div class="main">
   <div class="graph-panel">
-    <div class="graph-toolbar">
-      <button class="t-btn" onclick="zoomIn()">+</button>
-      <button class="t-btn" onclick="zoomOut()">−</button>
+    <div class="toolbar">
+      <button class="t-btn" onclick="zoomIn()" aria-label="확대">+</button>
+      <button class="t-btn" onclick="zoomOut()" aria-label="축소">−</button>
       <div class="t-sep"></div>
-      <div class="chip chip-A on" data-t="A" onclick="toggleChip(this)"><div class="d"></div>담당자</div>
-      <div class="chip chip-O on" data-t="O" onclick="toggleChip(this)"><div class="d"></div>객체</div>
-      <div class="chip chip-E on" data-t="E" onclick="toggleChip(this)"><div class="d"></div>이벤트</div>
-      <div class="chip chip-R on" data-t="R" onclick="toggleChip(this)"><div class="d"></div>기록</div>
-      <div class="chip chip-RU on" data-t="RU" onclick="toggleChip(this)"><div class="d"></div>규칙</div>
-      <div class="chip chip-B on" data-t="B" onclick="toggleChip(this)"><div class="d"></div>병목</div>
+      <span class="chip on" data-t="A" onclick="toggleChip(this)" style="color: var(--ds-brand)"><span class="d"></span>행위자</span>
+      <span class="chip on" data-t="O" onclick="toggleChip(this)" style="color: var(--ds-brand-soft)"><span class="d"></span>대상</span>
+      <span class="chip on" data-t="E" onclick="toggleChip(this)" style="color: var(--ds-brand-deep)"><span class="d"></span>이벤트</span>
+      <span class="chip on" data-t="R" onclick="toggleChip(this)" style="color: var(--ds-muted)"><span class="d"></span>기록</span>
+      <span class="chip on" data-t="RU" onclick="toggleChip(this)" style="color: var(--ds-faint)"><span class="d"></span>규칙</span>
+      <span class="chip on" data-t="B" onclick="toggleChip(this)" style="color: var(--ds-err)"><span class="d"></span>병목</span>
       <div class="t-spacer"></div>
       <button class="fit-btn" onclick="fitGraph()">전체 보기</button>
     </div>
     <div id="gc">
       <svg id="graph"></svg>
+      <div class="graph-legend">
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-brand)"></span>행위자 A</span>
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-brand-soft)"></span>대상 O</span>
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-brand-deep)"></span>이벤트 E</span>
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-muted)"></span>기록 R</span>
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-faint)"></span>규칙 RU</span>
+        <span class="leg-item"><span class="leg-dot" style="background: var(--ds-err)"></span>병목 B</span>
+      </div>
+      <div id="tip"></div>
     </div>
-    <div class="graph-legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cA)"></div>담당자(A)</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cO)"></div>객체(O)</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cE)"></div>이벤트(E)</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cR)"></div>기록(R)</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cRU)"></div>규칙(RU)</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--cB)"></div>병목(B)</div>
-    </div>
-    <div id="tip"></div>
   </div>
 
-  <div class="side-panel">
+  <aside class="side">
     <div class="psec">
       <div class="sec-hdr">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L11 10H1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M6 4.5v2.5M6 8.3v.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        발견된 병목
-        <span class="nbadge">2건</span>
+        <span class="t-label">발견된 병목</span>
+        <span class="nbadge num">2</span>
       </div>
-
       <div class="bn" id="bn-B01" onclick="selectBottleneck('B01')">
         <div class="bn-hdr">
-          <div class="bn-title"><div class="pulse"></div>수동 재고 조회</div>
-          <span class="pat-tag">P02 반복작업</span>
+          <span class="bn-name">수동 재고 조회</span>
+          <span class="pat">P07 상태 불명</span>
         </div>
+        <p class="bn-lane">시간 해방 레인 — 환산 가치</p>
         <div class="bn-mets">
-          <div class="bn-met"><div class="met-lbl">소요 시간</div><div class="met-val r">3.5h/건</div></div>
+          <div class="bn-met"><div class="met-lbl">소요</div><div class="met-val r">3.5h/건</div></div>
           <div class="bn-met"><div class="met-lbl">월 낭비</div><div class="met-val r">70시간</div></div>
-          <div class="bn-met"><div class="met-lbl">월 손실</div><div class="met-val r">₩140만</div></div>
+          <div class="bn-met"><div class="met-lbl">환산 가치</div><div class="met-val r">140만원</div></div>
         </div>
-        <div class="bn-desc">스프레드시트 수동 조회 → 자동화 시 15분으로 단축. 월 55시간 회수.</div>
+        <p class="bn-desc">재고 현황을 한눈에 보는 판이 없어 매번 스프레드시트를 수동 조회. 자동화하면 건당 15분 — 월 55시간 회수.</p>
       </div>
-
       <div class="bn" id="bn-B02" onclick="selectBottleneck('B02')">
         <div class="bn-hdr">
-          <div class="bn-title"><div class="pulse"></div>출고 승인 대기</div>
-          <span class="pat-tag">P01 대기</span>
+          <span class="bn-name">출고 승인 대기</span>
+          <span class="pat">P02 승인 단일점</span>
         </div>
+        <p class="bn-lane">현금 누수 레인 — 실질 절감</p>
         <div class="bn-mets">
           <div class="bn-met"><div class="met-lbl">평균 대기</div><div class="met-val r">1.5일/건</div></div>
           <div class="bn-met"><div class="met-lbl">월 발생</div><div class="met-val">8건</div></div>
           <div class="bn-met"><div class="met-lbl">납기 지연</div><div class="met-val r">3.2건/월</div></div>
         </div>
-        <div class="bn-desc">승인권자 부재 시 출고 중단. 모바일 알림 도입 시 30분 내 처리.</div>
+        <p class="bn-desc">승인권자 한 사람이 부재하면 출고가 멈춤. 임계값 이하 자동 승인 + 예외 알림으로 30분 내 처리 가능.</p>
       </div>
     </div>
 
     <div class="psec grow">
-      <div class="sec-hdr">선택된 노드</div>
+      <div class="sec-hdr"><span class="t-label">선택된 노드</span></div>
       <div class="nd">
-        <div class="nd-empty" id="nd-empty">
-          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" opacity=".35"><circle cx="13" cy="13" r="8" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="13" r="2.5" fill="currentColor"/><line x1="13" y1="5" x2="13" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="18" x2="13" y2="21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="18" y1="13" x2="21" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          노드를 클릭하면 상세 정보를 확인합니다
-        </div>
+        <div class="nd-empty" id="nd-empty">노드를 클릭하면 상세 정보를 확인합니다</div>
         <div class="nd-content" id="nd-content">
-          <div class="type-badge" id="nd-badge"></div>
+          <span class="type-badge" id="nd-badge"></span>
           <div class="nd-name" id="nd-name"></div>
-          <div class="nd-id" id="nd-id"></div>
-          <div class="nd-desc" id="nd-desc"></div>
+          <div class="nd-id num" id="nd-id"></div>
+          <p class="nd-desc" id="nd-desc"></p>
           <div class="conn-lbl">연결된 노드</div>
           <div class="conns" id="nd-conns"></div>
         </div>
@@ -348,124 +230,107 @@ footer {
     </div>
 
     <div class="psec">
-      <div class="sec-hdr">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 9l3-3 2 2 3-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
-        개선 효과 예측
-      </div>
+      <div class="sec-hdr"><span class="t-label">개선 효과 — 데모 기준</span></div>
       <div class="roi">
         <div class="roi-grid">
-          <div class="roi-card">
-            <div class="r-lbl">월 낭비 시간</div>
-            <div class="r-val r">82 <span class="u">시간</span></div>
-            <div class="r-sub">B01(70h) + B02(12h)</div>
-          </div>
-          <div class="roi-card hi">
-            <div class="r-lbl">월 절감 가능</div>
-            <div class="r-val g">₩140<span class="u">만</span></div>
-            <div class="r-sub">재고 자동화 기준</div>
-          </div>
-          <div class="roi-card">
-            <div class="r-lbl">구축 비용</div>
-            <div class="r-val">₩290<span class="u">만</span></div>
-            <div class="r-sub">온톨로지 설계 포함</div>
-          </div>
-          <div class="roi-card hi">
-            <div class="r-lbl">투자 회수</div>
-            <div class="r-val g">2.1<span class="u">개월</span></div>
-            <div class="r-sub">연간 ₩1,680만 효과</div>
-          </div>
+          <div class="roi-cell"><div class="r-lbl">시간 해방</div><div class="r-val num">82 <span class="u">시간/월</span></div><div class="r-sub">B01 70h + B02 12h</div></div>
+          <div class="roi-cell"><div class="r-lbl">환산 가치 (절감 아님)</div><div class="r-val num">140<span class="u">만원/월</span></div><div class="r-sub">해방 시간의 여력 환산</div></div>
+          <div class="roi-cell"><div class="r-lbl">실질 절감</div><div class="r-val good num">3.2<span class="u">건/월</span></div><div class="r-sub">납기 지연 차단 — 위약금·재주문</div></div>
+          <div class="roi-cell"><div class="r-lbl">투자 회수</div><div class="r-val num">2.1<span class="u">개월</span></div><div class="r-sub">구축 290만원, 환산 가치 기준</div></div>
         </div>
       </div>
     </div>
-  </div>
+  </aside>
 </div>
 
-<footer>
-  <div class="st"><span class="st-lbl">노드</span><span class="st-val">18</span></div>
-  <div class="st"><span class="st-lbl">관계</span><span class="st-val">17</span></div>
-  <div class="st"><span class="st-lbl">병목</span><span class="st-val r">2</span></div>
-  <div class="st"><span class="st-lbl">월 낭비</span><span class="st-val r">82시간</span></div>
-  <div class="st"><span class="st-lbl">연간 절감</span><span class="st-val g">₩16,800,000</span></div>
-  <div class="f-spacer"></div>
-  <span class="notice">📊 샘플 데이터 — 실제 고객사와 무관합니다</span>
+<footer class="statusbar">
+  <span class="st">노드 <span class="st-val num">18</span></span>
+  <span class="st">관계 <span class="st-val num">17</span></span>
+  <span class="st">병목 <span class="st-val r num">2</span></span>
+  <span class="st">월 낭비 <span class="st-val r num">82시간</span></span>
+  <span class="st">연간 환산 가치 <span class="st-val num">1,680만원</span></span>
+  <span class="f-spacer"></span>
+  <span class="notice">데모 데이터 — 가상 기업 시나리오이며 실제 고객 사례가 아닙니다</span>
 </footer>
 
 <script>
-const COLORS = { A:'#60A5FA', O:'#A78BFA', E:'#F59E0B', R:'#34D399', RU:'#4ADE80', B:'#F87171' };
-const LABELS = { A:'담당자', O:'객체', E:'이벤트', R:'기록', RU:'규칙', B:'병목' };
+// 색은 전부 디자인 토큰에서 런타임으로 읽는다 (hex 하드코딩 금지)
+const css = getComputedStyle(document.documentElement);
+const v = name => css.getPropertyValue(name).trim();
+const COLORS = { A: v('--ds-brand'), O: v('--ds-brand-soft'), E: v('--ds-brand-deep'), R: v('--ds-muted'), RU: v('--ds-faint'), B: v('--ds-err') };
+const TINTS  = { A: v('--ds-brand-tint'), O: v('--ds-bg'), E: v('--ds-bg'), R: v('--ds-bg'), RU: v('--ds-bg'), B: v('--ds-err-tint') };
+const LINE = v('--ds-line-strong');
+const LABELS = { A:'행위자', O:'대상', E:'이벤트', R:'기록', RU:'규칙', B:'병목' };
 const R = { A:20, O:16, E:18, R:15, RU:15, B:22 };
 
+// 개체·관계 — 키트 v0.1 스키마 (관계는 고정 어휘 12개만, 병목 연결선은 라벨 없는 점선)
 const nodes = [
-  { id:'A01', label:'영업팀', type:'A', desc:'외부 고객 주문 접수 및 계약 관리. 발주서를 시스템에 등록하고 납기를 조율합니다.' },
-  { id:'A02', label:'생산관리팀', type:'A', desc:'생산 스케줄 수립 및 출하 관리. 재고 확인 후 생산 일정을 배정합니다.' },
-  { id:'A03', label:'구매팀', type:'A', desc:'원자재 구매 및 대금 처리. 출고 완료 후 세금계산서를 발행합니다.' },
-  { id:'O01', label:'발주서', type:'O', desc:'고객 발주 정보가 담긴 문서. 납기, 수량, 규격이 포함됩니다.' },
-  { id:'O02', label:'재고 DB', type:'O', desc:'현재 원자재·완제품 재고 현황. 현재 스프레드시트로 수동 관리 중 (병목 원인).' },
-  { id:'O03', label:'생산 일정표', type:'O', desc:'주간·월간 생산 계획 문서. 라인별 가동률 및 납기 일정 포함.' },
-  { id:'O04', label:'거래명세서', type:'O', desc:'출고 대금 청구 명세서. 세금계산서 발행 기준 문서.' },
-  { id:'E01', label:'발주 접수', type:'E', desc:'고객 발주서를 확인하고 시스템에 등록하는 이벤트.' },
-  { id:'E02', label:'재고 확인', type:'E', desc:'생산 가능 여부 확인을 위해 재고 DB를 조회. 현재 수동 조회로 건당 3~4시간 소요.', bn:'B01' },
-  { id:'E03', label:'생산일정 수립', type:'E', desc:'재고 확인 후 가용 생산라인을 배정하고 일정을 수립합니다.' },
-  { id:'E04', label:'출고 승인', type:'E', desc:'품질 검수 완료 후 출고를 승인하는 이벤트. 이중 승인 규정으로 담당자 부재 시 지연.', bn:'B02' },
-  { id:'E05', label:'대금 청구', type:'E', desc:'출고 완료 후 구매팀이 세금계산서를 발행하는 이벤트.' },
-  { id:'R01', label:'재고부족 보고', type:'R', desc:'재고가 기준치 미만일 때 생성되는 긴급 발주 요청 기록.' },
-  { id:'R02', label:'납기 확인서', type:'R', desc:'고객에게 납기 약속을 확인하는 문서. 출고 승인 후 발행.' },
-  { id:'RU01', label:'재고 기준치 30%', type:'RU', desc:'재고가 30% 이하이면 즉시 구매팀에 발주 요청. 사내 규정 제12조.' },
-  { id:'RU02', label:'이중 승인 의무', type:'RU', desc:'출고 전 생산관리자 + 팀장의 이중 확인 필수. 품질관리 규정 제7조.' },
-  { id:'B01', label:'수동 재고 조회', type:'B',
-    desc:'스프레드시트 수동 조회로 건당 3~4시간 소요 (월 20건 = 70시간). 자동화 시 15분으로 단축 → 월 55시간 회수, ₩140만 절감.',
-    cost:{ time:'3.5h/건', mo:'70시간', loss:'₩140만/월' } },
-  { id:'B02', label:'승인 대기', type:'B',
-    desc:'승인권자 부재 시 출고 중단. 평균 1.5일 대기, 월 8건 발생 = 납기 지연 3.2건/월. 모바일 알림 시스템 도입 시 30분 내 처리 가능.',
-    cost:{ time:'1.5일/건', mo:'8건/월', loss:'납기지연 3.2건' } },
+  { id:'A01', label:'영업팀', type:'A', desc:'외부 고객 주문 접수와 계약 관리. 발주서를 등록하고 납기를 조율합니다.' },
+  { id:'A02', label:'생산관리팀', type:'A', desc:'생산 스케줄 수립과 출하 관리. 재고 확인 후 생산 일정을 배정합니다.' },
+  { id:'A03', label:'구매팀', type:'A', desc:'원자재 구매와 대금 처리. 출고 완료 후 세금계산서를 발행합니다.' },
+  { id:'O01', owner:'영업팀', label:'발주서', type:'O', desc:'고객 발주 정보가 담긴 문서. 납기, 수량, 규격이 포함됩니다.' },
+  { id:'O02', owner:'생산관리팀', label:'재고 장부', type:'O', desc:'원자재·완제품 재고 현황. 현재 스프레드시트로 수동 관리 중 — 병목의 원인.' },
+  { id:'O03', owner:'생산관리팀', label:'생산 일정표', type:'O', desc:'주간·월간 생산 계획. 라인별 가동률과 납기 일정 포함.' },
+  { id:'O04', owner:'구매팀', label:'거래명세서', type:'O', desc:'출고 대금 청구 명세. 세금계산서 발행의 기준 문서.' },
+  { id:'E01', owner:'영업팀', label:'발주 접수', type:'E', desc:'고객 발주서를 확인하고 시스템에 등록합니다.' },
+  { id:'E02', owner:'생산관리팀', label:'재고 확인', type:'E', desc:'생산 가능 여부를 확인하러 재고 장부를 조회. 현재 수동 조회로 건당 3~4시간.', bn:'B01' },
+  { id:'E03', owner:'생산관리팀', label:'생산일정 수립', type:'E', desc:'재고 확인 후 가용 생산라인을 배정하고 일정을 세웁니다.' },
+  { id:'E04', owner:'생산관리팀', label:'출고 승인', type:'E', desc:'품질 검수 후 출고를 승인. 승인권자가 한 사람이라 부재 시 지연.', bn:'B02' },
+  { id:'E05', owner:'구매팀', label:'대금 청구', type:'E', desc:'출고 완료 후 구매팀이 세금계산서를 발행합니다.' },
+  { id:'R01', owner:'생산관리팀', label:'재고부족 보고', type:'R', desc:'재고가 기준치 미만일 때 적히는 긴급 발주 요청 기록.' },
+  { id:'R02', owner:'영업팀', label:'납기 확인서', type:'R', desc:'고객에게 납기 약속을 확인하는 기록. 출고 승인 후 발행.' },
+  { id:'RU01', owner:'구매팀', label:'재고 기준치 30%', type:'RU', desc:'재고 30% 이하이면 즉시 구매팀에 발주 요청. 사내 규정 제12조.' },
+  { id:'RU02', owner:'생산관리팀', label:'이중 승인 의무', type:'RU', desc:'출고 전 생산관리자와 팀장의 이중 확인 필수. 품질관리 규정 제7조.' },
+  { id:'B01', owner:'생산관리팀', label:'수동 재고 조회', type:'B',
+    desc:'패턴 P07 상태 불명 — 현황판이 없어 스프레드시트 수동 조회, 건당 3~4시간(월 20건 = 70시간). 자동화 시 15분으로 단축. 시간 해방 레인 — 환산 가치 월 140만원.',
+    cost:{ loss:'환산 가치 월 140만원' } },
+  { id:'B02', owner:'생산관리팀', label:'승인 대기', type:'B',
+    desc:'패턴 P02 승인 단일점 — 승인권자 부재 시 출고 중단. 평균 1.5일 대기, 월 8건 = 납기 지연 3.2건. 현금 누수 레인 — 위약금·재주문 손실이 실제 현금으로 샘. 임계값 자동 승인 + 예외 알림으로 차단.',
+    cost:{ loss:'납기 지연 3.2건/월 — 실질 손실' } },
 ];
 
 const links = [
-  { source:'A01', target:'E01', label:'시작한다' },
-  { source:'E01', target:'O01', label:'생성한다' },
-  { source:'A02', target:'E02', label:'실행한다' },
+  { source:'A01', target:'E01', label:'만든다' },
+  { source:'E01', target:'O01', label:'만든다' },
+  { source:'A02', target:'E02', label:'확인한다' },
   { source:'E02', target:'O02', label:'참조한다' },
-  { source:'E02', target:'R01', label:'생성한다' },
-  { source:'RU01', target:'E02', label:'규정한다' },
-  { source:'E02', target:'B01', label:'유발한다' },
-  { source:'R01', target:'E03', label:'트리거한다' },
-  { source:'A02', target:'E03', label:'실행한다' },
-  { source:'E03', target:'O03', label:'업데이트한다' },
-  { source:'A02', target:'E04', label:'실행한다' },
-  { source:'RU02', target:'E04', label:'규정한다' },
-  { source:'E04', target:'B02', label:'유발한다' },
-  { source:'E04', target:'R02', label:'생성한다' },
-  { source:'A03', target:'E05', label:'실행한다' },
-  { source:'E05', target:'O04', label:'생성한다' },
-  { source:'O04', target:'R02', label:'포함한다' },
+  { source:'E02', target:'R01', label:'적는다' },
+  { source:'E02', target:'RU01', label:'판단한다' },
+  { source:'E02', target:'B01', label:'', bt: true },
+  { source:'E03', target:'R01', label:'참조한다' },
+  { source:'A02', target:'E03', label:'만든다' },
+  { source:'E03', target:'O03', label:'적는다' },
+  { source:'A02', target:'E04', label:'승인한다' },
+  { source:'E04', target:'RU02', label:'판단한다' },
+  { source:'E04', target:'B02', label:'', bt: true },
+  { source:'E04', target:'R02', label:'만든다' },
+  { source:'A03', target:'E05', label:'요청한다' },
+  { source:'E05', target:'O04', label:'만든다' },
+  { source:'O04', target:'R02', label:'참조한다' },
 ];
 
-// Setup
 const gc = document.getElementById('gc');
 const svg = d3.select('#graph');
 const tip = document.getElementById('tip');
 let W = gc.clientWidth, H = gc.clientHeight;
 svg.attr('width', W).attr('height', H);
 
-// Defs: arrowheads
 const defs = svg.append('defs');
-['default','bt'].forEach(k => {
+[['default', LINE], ['bt', COLORS.B]].forEach(([k, color]) => {
   defs.append('marker')
     .attr('id', 'ar-'+k)
     .attr('viewBox','0 -4 8 8').attr('refX',8).attr('refY',0)
     .attr('markerWidth',5).attr('markerHeight',5).attr('orient','auto')
-    .append('path').attr('d','M0,-4L8,0L0,4')
-    .attr('fill', k==='bt' ? 'rgba(248,113,113,.55)' : 'rgba(255,255,255,.22)');
+    .append('path').attr('d','M0,-4L8,0L0,4').attr('fill', color);
 });
 
 const g = svg.append('g');
 const zoom = d3.zoom().scaleExtent([0.1,6]).on('zoom', e => {
   g.attr('transform', e.transform);
-  linkLabels.style('opacity', e.transform.k > 1.6 ? Math.min((e.transform.k-1.6)/0.5, 0.7) : 0);
+  linkLabels.style('opacity', e.transform.k > 1.4 ? Math.min((e.transform.k-1.4)/0.5, 0.85) : 0);
 });
 svg.call(zoom);
 
-// Sim
 const sim = d3.forceSimulation(nodes)
   .force('link', d3.forceLink(links).id(d=>d.id).distance(d=>
     (d.source.type==='B'||d.target.type==='B') ? 75 : 115
@@ -474,16 +339,16 @@ const sim = d3.forceSimulation(nodes)
   .force('center', d3.forceCenter(W/2, H/2))
   .force('collide', d3.forceCollide().radius(d=>R[d.type]+26));
 
-// Links
 const linkSel = g.append('g').selectAll('line').data(links).join('line')
-  .attr('class', d=>`link${d.label==='유발한다'?' bt':''}`)
-  .attr('marker-end', d=>`url(#ar-${d.label==='유발한다'?'bt':'default'})`);
+  .attr('class','link')
+  .attr('stroke', d=>d.bt ? COLORS.B : LINE)
+  .attr('stroke-width', d=>d.bt ? 1.5 : 1.2)
+  .attr('stroke-dasharray', d=>d.bt ? '4 3' : null)
+  .attr('marker-end', d=>`url(#ar-${d.bt?'bt':'default'})`);
 
-// Link labels
 const linkLabels = g.append('g').selectAll('text').data(links).join('text')
   .attr('class','linklbl').text(d=>d.label).style('opacity',0);
 
-// Nodes
 const nodeSel = g.append('g').selectAll('g').data(nodes).join('g')
   .attr('class', d=>`node node-${d.type}`)
   .style('cursor','pointer')
@@ -498,18 +363,22 @@ const nodeSel = g.append('g').selectAll('g').data(nodes).join('g')
 
 nodeSel.append('circle')
   .attr('r', d=>R[d.type])
-  .attr('fill', d=>`${COLORS[d.type]}1e`)
-  .attr('stroke', d=>COLORS[d.type]);
+  .attr('fill', d=>TINTS[d.type])
+  .attr('stroke', d=>COLORS[d.type])
+  .attr('stroke-width', d=>d.type==='B' ? 2.4 : 1.8);
 
 nodeSel.append('text').text(d=>d.id)
+  .attr('font-family',"'Satoshi', sans-serif")
   .attr('font-weight','700')
   .attr('font-size', d=>d.type==='RU'?'8px':'10px')
   .attr('fill', d=>COLORS[d.type]);
 
-nodeSel.append('text').attr('class','nlbl')
-  .attr('dy', d=>R[d.type]+14)
-  .attr('font-size','10px').attr('fill','#9CA3AF')
+nodeSel.filter(d=>d.owner).append('text').attr('class','nowner')
+  .attr('dy', d=>R[d.type]+13).text(d=>d.owner);
+const nameSel = nodeSel.append('text').attr('class','nlbl')
+  .attr('dy', d=>d.owner ? R[d.type]+27 : R[d.type]+14)
   .text(d=>d.label);
+nameSel.filter(d=>d.type==='B').attr('fill', COLORS.B);
 
 svg.on('click', clearSel);
 
@@ -528,7 +397,6 @@ sim.on('tick', () => {
 
 sim.on('end', ()=>setTimeout(()=>fitGraph(false), 80));
 
-// Select node
 function selectNode(d) {
   nodeSel.classed('dimmed', n=>{
     const conn = links.some(l=>(l.source.id===d.id&&l.target.id===n.id)||(l.target.id===d.id&&l.source.id===n.id)||n.id===d.id);
@@ -540,20 +408,18 @@ function selectNode(d) {
   const c=document.getElementById('nd-content'); c.classList.add('vis');
   const badge=document.getElementById('nd-badge');
   badge.textContent=LABELS[d.type];
-  badge.style.cssText=`background:${COLORS[d.type]}20;color:${COLORS[d.type]};border:1px solid ${COLORS[d.type]}40`;
+  badge.style.cssText=`background:${TINTS[d.type]};color:${COLORS[d.type]};border:1px solid ${COLORS[d.type]}`;
   document.getElementById('nd-name').textContent=d.label;
   document.getElementById('nd-id').textContent=d.id;
   document.getElementById('nd-desc').textContent=d.desc;
 
   const conns=[];
   links.forEach(l=>{
-    if(l.source.id===d.id) conns.push({n:l.target,rel:l.label,dir:'→'});
-    if(l.target.id===d.id) conns.push({n:l.source,rel:l.label,dir:'←'});
+    if(l.source.id===d.id) conns.push({n:l.target,rel:l.label||'병목 발생',dir:'→'});
+    if(l.target.id===d.id) conns.push({n:l.source,rel:l.label||'병목 발생',dir:'←'});
   });
   document.getElementById('nd-conns').innerHTML=conns.map(c=>
-    `<span class="conn-chip" onclick="clickConn('${c.n.id}')"
-       style="border-color:${COLORS[c.n.type]}40;color:${COLORS[c.n.type]}"
-       title="${c.dir} ${c.rel}">${c.dir} ${c.n.label}</span>`).join('');
+    `<span class="conn-chip" onclick="clickConn('${c.n.id}')" title="${c.dir} ${c.rel}">${c.dir} ${c.n.label}</span>`).join('');
 
   document.querySelectorAll('.bn').forEach(el=>el.classList.remove('active'));
   if(d.type==='B') document.getElementById('bn-'+d.id)?.classList.add('active');
@@ -578,23 +444,21 @@ function selectBottleneck(id) {
   selectNode(d);
 }
 
-// Tooltip
 function showTip(e,d) {
   tip.style.opacity='1';
   tip.innerHTML=`<strong style="color:${COLORS[d.type]}">${d.label}</strong>
-    <br><span style="color:#6B7280;font-size:10px">${d.id} · ${LABELS[d.type]}</span>
-    ${d.cost?`<br><span style="color:#F87171;font-size:11px;margin-top:3px;display:block">⚠ ${d.cost.loss}</span>`:''}`;
+    <br><span style="color:${v('--ds-faint')};font-size:10px">${d.id} · ${LABELS[d.type]}</span>
+    ${d.cost?`<br><span style="color:${COLORS.B};font-size:11px;margin-top:3px;display:block">${d.cost.loss}</span>`:''}`;
   moveTip(e);
 }
 function moveTip(e) {
   const rect=gc.getBoundingClientRect();
   let x=e.clientX-rect.left+14, y=e.clientY-rect.top+14;
-  if(x+210>rect.width) x-=225;
+  if(x+220>rect.width) x-=235;
   tip.style.left=x+'px'; tip.style.top=y+'px';
 }
 function hideTip() { tip.style.opacity='0'; }
 
-// Zoom controls
 function zoomIn() { svg.transition().duration(280).call(zoom.scaleBy,1.4); }
 function zoomOut() { svg.transition().duration(280).call(zoom.scaleBy,0.72); }
 function fitGraph(anim=true) {
@@ -604,7 +468,6 @@ function fitGraph(anim=true) {
   (anim?svg.transition().duration(480):svg).call(zoom.transform,d3.zoomIdentity.translate(tx,ty).scale(sc));
 }
 
-// Filter
 const active=new Set(['A','O','E','R','RU','B']);
 function toggleChip(el) {
   const t=el.dataset.t; el.classList.toggle('on');

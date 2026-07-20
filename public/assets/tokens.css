@@ -1,0 +1,44 @@
+/* AUTO-GENERATED — .design/tokens.json (design-studio/tokens-v1)에서 생성.
+   손으로 수정 금지. 재생성: node <design-check-root>/scripts/tokens-to-code.mjs <프로젝트> --format css
+   project: jobslab · tokens updated: 2026-07-12 */
+:root {
+  --color-primary: #332D7B;
+  --color-on-primary: #FFFFFF;
+  --color-bg: #FFFFFF;
+  --color-surface: #F7F7FB;
+  --color-text: #191731;
+  --color-muted: #6B6980;
+  --color-allowed-1: #332D7B;
+  --color-allowed-2: #221E5C;
+  --color-allowed-3: #EFEDFA;
+  --color-allowed-4: #191731;
+  --color-allowed-5: #6B6980;
+  --color-allowed-6: #A5A3B8;
+  --color-allowed-7: #E8E7F0;
+  --color-allowed-8: #D6D4E4;
+  --color-allowed-9: #F7F7FB;
+  --color-allowed-10: #FFFFFF;
+  --color-allowed-11: #2E6B52;
+  --color-allowed-12: #8A6A2F;
+  --color-allowed-13: #9C3B32;
+  --color-allowed-14: #131126;
+  --color-allowed-15: #1A1834;
+  --color-allowed-16: #262347;
+  --color-allowed-17: #343060;
+  --color-allowed-18: #F4F3FB;
+  --color-allowed-19: #9A97B3;
+  --color-allowed-20: #5F5C7E;
+  --color-allowed-21: #8B82E8;
+  --color-allowed-22: #A79FF2;
+  --color-allowed-23: #221E4A;
+  --color-allowed-24: #F9F3E8;
+  --color-allowed-25: #FAEEEC;
+  --font-sans: 'Wanted Sans Variable', 'Wanted Sans', sans-serif;
+  --font-weight-heading: 300;
+  --text-body: 16px;
+  --radius-base: 2px;
+  --radius-card: 2px;
+  --radius-pill: 2px;
+  --spacing-unit: 8px;
+  --spacing-gutter: 32px;
+}
