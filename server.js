@@ -16,9 +16,10 @@ const MIME = {
 };
 
 const ROUTES = {
-  "/":      "/index.html",
-  "/mock":  "/mock.html",
-  "/guide": "/guide.html",
+  "/":         "/index.html",
+  "/mock":     "/mock.html",
+  "/guide":    "/guide.html",
+  "/ax-check": "/ax-check.html",
 };
 
 http.createServer((req, res) => {

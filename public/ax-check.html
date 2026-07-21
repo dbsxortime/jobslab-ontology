@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업무 진단 설문 — ontology | jobslab</title>
+<meta name="description" content="5분이면 됩니다. 매주 반복하는 업무에서 얼마나 많은 시간이 새고 있는지, 연간 몇 시간을 되찾을 수 있는지 확인하세요.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+<link rel="stylesheet" href="/assets/tokens.css">
+<link rel="stylesheet" href="/assets/design-system.css">
+<link rel="stylesheet" href="/assets/details.css">
+<style>
+/* 페이지 전용 — 전부 --ds-* 토큰 참조, hex 금지 */
+.survey { max-width: 680px; margin: 0 auto; padding: clamp(32px, 6vw, 72px) clamp(20px, 5vw, 40px) 96px; }
+.brandline { display: flex; align-items: center; gap: 8px; margin-bottom: clamp(32px, 5vw, 56px); }
+.brandline .dot { width: 9px; height: 9px; background: var(--ds-brand); border-radius: 50%; }
+.brandline .wm { font-family: 'Satoshi', sans-serif; font-weight: 500; font-size: 15px; letter-spacing: -0.01em; color: var(--ds-ink); }
+.brandline .tag { font-size: 12px; color: var(--ds-muted); margin-left: auto; }
+
+/* 진행 막대 */
+.prog { display: flex; align-items: center; gap: 8px; margin-bottom: clamp(28px, 4vw, 44px); }
+.prog .bars { display: flex; gap: 5px; flex: 1; }
+.prog .bars i { flex: 1; height: 3px; background: var(--ds-line); border-radius: 2px; transition: background var(--ds-dur-base, .2s) var(--ds-ease, ease); }
+.prog .bars i.on { background: var(--ds-brand); }
+.prog .lbl { font-size: 12px; color: var(--ds-muted); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+
+/* 단계 */
+.step[hidden] { display: none; }
+.btn[hidden] { display: none; }   /* .btn이 hidden 속성을 덮어쓰지 않게 */
+.step .kick { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--ds-muted); margin-bottom: 10px; }
+.step h1 { font-size: 16px; font-weight: 600; line-height: 1.5; letter-spacing: -0.01em; color: var(--ds-ink); margin: 0 0 6px; }
+.step .help { font-size: 14px; color: var(--ds-muted); margin: 0 0 20px; }
+.qblock { margin-bottom: 28px; }
+.qblock > .qlabel { display: block; font-size: 14px; font-weight: 500; color: var(--ds-ink); margin-bottom: 12px; }
+.qblock > .qhint { font-size: 12px; color: var(--ds-faint); margin-left: 6px; font-weight: 400; }
+
+/* 선택 칩 (라디오/체크박스) */
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { position: relative; }
+.opt input { position: absolute; opacity: 0; pointer-events: none; }
+.opt span { display: inline-flex; align-items: center; padding: 10px 16px; border: 1px solid var(--ds-line-strong); border-radius: var(--radius-base); font-size: 14px; color: var(--ds-ink); cursor: pointer; transition: border-color var(--ds-dur-fast, .15s) var(--ds-ease, ease), background var(--ds-dur-fast, .15s) var(--ds-ease, ease); }
+.opt span:hover { border-color: var(--ds-brand); }
+.opt input:checked + span { border-color: var(--ds-brand); background: var(--ds-brand-tint); color: var(--ds-brand); font-weight: 500; }
+.opt input:focus-visible + span { outline: 2px solid var(--ds-brand); outline-offset: 2px; }
+
+/* 실시간 미리보기 */
+.preview-line { min-height: 22px; margin-top: 16px; font-size: 14px; color: var(--ds-brand); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* 내비 */
+.nav { display: flex; gap: 12px; margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--ds-line); }
+.nav .btn { min-width: 96px; justify-content: center; }
+.nav .spacer { flex: 1; }
+
+/* 결과 */
+.result-head { font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--ds-muted); margin-bottom: 20px; }
+.result-big { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.result-big .num { font-family: 'Satoshi', sans-serif; font-weight: 300; font-size: clamp(56px, 13vw, 96px); line-height: 1; letter-spacing: -0.03em; color: var(--ds-brand); font-variant-numeric: tabular-nums; }
+.result-big .unit { font-size: 20px; font-weight: 400; color: var(--ds-ink); }
+.result-sub { font-size: 14px; color: var(--ds-muted); margin: 0 0 4px; }
+.result-note { font-size: 12px; color: var(--ds-faint); margin: 0 0 36px; }
+
+/* 리드 폼 */
+.lead { border-top: 1px solid var(--ds-line); padding-top: 32px; }
+.lead .lead-title { font-size: 16px; font-weight: 600; color: var(--ds-ink); margin: 0 0 4px; }
+.lead .lead-desc { font-size: 14px; color: var(--ds-muted); margin: 0 0 20px; }
+.lead .field { margin-bottom: 16px; }
+.lead-done { font-size: 14px; color: var(--ds-ok); }
+</style>
+</head>
+<body>
+<main class="survey">
+  <div class="brandline">
+    <span class="dot"></span>
+    <span class="wm">ontology</span>
+    <span class="tag">업무 진단</span>
+  </div>
+
+  <div class="prog">
+    <div class="bars">
+      <i data-bar="1"></i><i data-bar="2"></i><i data-bar="3"></i><i data-bar="4"></i><i data-bar="5"></i>
+    </div>
+    <span class="lbl" id="prog-label">1 / 5</span>
+  </div>
+
+  <!-- STEP 1 · 역할 -->
+  <section class="step" data-step="1">
+    <div class="kick">Step 1 · 역할</div>
+    <h1>지금 어떤 일을 하고 계신가요?</h1>
+    <p class="help">먼저 담당 업무와 팀 규모를 알려주세요.</p>
+
+    <div class="qblock">
+      <span class="qlabel">담당 업무 <span class="qhint">복수 선택 가능</span></span>
+      <div class="opts">
+        <label class="opt"><input type="checkbox" name="role" value="기획·전략"><span>기획·전략</span></label>
+        <label class="opt"><input type="checkbox" name="role" value="영업·마케팅"><span>영업·마케팅</span></label>
+        <label class="opt"><input type="checkbox" name="role" value="운영·관리"><span>운영·관리</span></label>
+        <label class="opt"><input type="checkbox" name="role" value="개발·기술"><span>개발·기술</span></label>
+        <label class="opt"><input type="checkbox" name="role" value="교육·HR"><span>교육·HR</span></label>
+        <label class="opt"><input type="checkbox" name="role" value="기타"><span>기타</span></label>
+      </div>
+    </div>
+
+    <div class="qblock">
+      <span class="qlabel">팀 인원</span>
+      <div class="opts">
+        <label class="opt"><input type="radio" name="team" value="나 혼자"><span>나 혼자</span></label>
+        <label class="opt"><input type="radio" name="team" value="2–5명"><span>2–5명</span></label>
+        <label class="opt"><input type="radio" name="team" value="6–15명"><span>6–15명</span></label>
+        <label class="opt"><input type="radio" name="team" value="16명 이상"><span>16명 이상</span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 · 반복 업무 -->
+  <section class="step" data-step="2" hidden>
+    <div class="kick">Step 2 · 반복 업무</div>
+    <h1>매주 반복하는 업무는 무엇인가요?</h1>
+    <p class="help">가장 자주 손이 가는 일 1~3가지만 적어주세요.</p>
+
+    <div class="qblock">
+      <span class="qlabel">대표 반복 업무</span>
+      <div class="field">
+        <textarea id="tasks" name="tasks" rows="3" maxlength="300" placeholder="예: 주간 보고서 취합, 재고 현황 정리, 문의 응대 분류"></textarea>
+      </div>
+    </div>
+
+    <div class="qblock">
+      <span class="qlabel">이 반복 업무에 주당 몇 시간을 쓰시나요?</span>
+      <div class="opts">
+        <label class="opt"><input type="radio" name="weekly" value="3시간 미만"><span>3시간 미만</span></label>
+        <label class="opt"><input type="radio" name="weekly" value="3–8시간"><span>3–8시간</span></label>
+        <label class="opt"><input type="radio" name="weekly" value="8–15시간"><span>8–15시간</span></label>
+        <label class="opt"><input type="radio" name="weekly" value="15시간 이상"><span>15시간 이상</span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 · 숨은 비용 -->
+  <section class="step" data-step="3" hidden>
+    <div class="kick">Step 3 · 숨은 비용</div>
+    <h1>그중 '판단 없이' 할 수 있는 일은 얼마나 되나요?</h1>
+    <p class="help">단순 반복·취합·정리처럼, 사람이 꼭 고민하지 않아도 되는 비율이요.</p>
+
+    <div class="qblock">
+      <span class="qlabel">단순 반복·취합·정리 비율</span>
+      <div class="opts">
+        <label class="opt"><input type="radio" name="ratio" value="0"><span>10% 이하</span></label>
+        <label class="opt"><input type="radio" name="ratio" value="1"><span>10–30%</span></label>
+        <label class="opt"><input type="radio" name="ratio" value="2"><span>30–50%</span></label>
+        <label class="opt"><input type="radio" name="ratio" value="3"><span>50% 이상</span></label>
+      </div>
+      <p class="preview-line" id="ratio-preview"></p>
+    </div>
+  </section>
+
+  <!-- STEP 4 · 이상 상태 -->
+  <section class="step" data-step="4" hidden>
+    <div class="kick">Step 4 · 되찾은 시간</div>
+    <h1>그 시간을 되찾는다면, 무엇을 하고 싶으세요?</h1>
+    <p class="help">하나만 골라주세요.</p>
+
+    <div class="qblock">
+      <div class="opts">
+        <label class="opt"><input type="radio" name="ideal" value="고객·관계자와 더 많이 소통"><span>고객·관계자와 더 많이 소통</span></label>
+        <label class="opt"><input type="radio" name="ideal" value="전략·기획 집중"><span>전략·기획 집중</span></label>
+        <label class="opt"><input type="radio" name="ideal" value="팀원 챙기기"><span>팀원 챙기기</span></label>
+        <label class="opt"><input type="radio" name="ideal" value="개인 성장"><span>개인 성장</span></label>
+        <label class="opt"><input type="radio" name="ideal" value="일찍 퇴근"><span>일찍 퇴근</span></label>
+        <label class="opt"><input type="radio" name="ideal" value="기타"><span>기타</span></label>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5 · 결과 -->
+  <section class="step" data-step="5" hidden>
+    <div class="result-head">진단 결과</div>
+    <div class="result-big">
+      <span class="num" id="result-hours">—</span>
+      <span class="unit">시간 / 년</span>
+    </div>
+    <p class="result-sub">지금 하시는 일 기준으로, 자동화로 되찾을 수 있는 시간입니다.</p>
+    <p class="result-note">단순 반복·취합·정리 비율을 바탕으로 한 보수적 추정치입니다.</p>
+
+    <div class="lead">
+      <p class="lead-title">자세한 진단을 받아보시겠어요? <span style="font-weight:400;color:var(--ds-muted);font-size:14px;">(선택)</span></p>
+      <p class="lead-desc">연락처를 남기시면, 어디서 시간이 새는지 짚어 하루 안에 알려드립니다. 남기지 않으셔도 괜찮아요.</p>
+      <form id="lead-form">
+        <div class="field">
+          <label for="lead-name">이름</label>
+          <input id="lead-name" name="name" maxlength="80" autocomplete="name" placeholder="어떻게 불러드릴까요">
+        </div>
+        <div class="field">
+          <label for="lead-contact">연락처</label>
+          <input id="lead-contact" name="contact" maxlength="120" autocomplete="email" placeholder="이메일 또는 전화번호">
+        </div>
+        <div class="field">
+          <label for="lead-company">소속 <span style="color:var(--ds-faint);font-weight:400;">(선택)</span></label>
+          <input id="lead-company" name="company" maxlength="80" autocomplete="organization" placeholder="회사·팀 이름">
+        </div>
+        <input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;" aria-hidden="true">
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center;">진단 받기</button>
+        <p class="lead-done" id="lead-done" hidden>접수됐습니다. 하루 안에 연락드릴게요.</p>
+      </form>
+    </div>
+  </section>
+
+  <div class="nav">
+    <button class="btn btn-secondary" id="nav-prev" type="button" disabled>이전</button>
+    <span class="spacer"></span>
+    <button class="btn btn-primary" id="nav-next" type="button">다음</button>
+  </div>
+</main>
+
+<script>
+const CONTACT_API = 'https://jobslab.dev/api/contact';
+const WEEKLY_LOWER = [2, 4, 12, 20];   // 3단계 비율 구간 → 주당시간 하한
+const WEEKS_PER_YEAR = 50;
+const RATIO_LABEL = ['10% 이하', '10–30%', '30–50%', '50% 이상'];
+
+function annualHours(idx) {
+  if (idx < 0 || idx > 3) return null;
+  return WEEKLY_LOWER[idx] * WEEKS_PER_YEAR;   // 100 / 200 / 600 / 1000
+}
+
+const state = { roles: [], team: '', tasks: '', weekly: '', ratioIdx: -1, ideal: '' };
+let step = 1;
+const TOTAL = 5;
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function collect() {
+  state.roles = $$('input[name=role]:checked').map(i => i.value);
+  state.team = ($('input[name=team]:checked') || {}).value || '';
+  state.tasks = $('#tasks').value.trim();
+  state.weekly = ($('input[name=weekly]:checked') || {}).value || '';
+  const r = $('input[name=ratio]:checked');
+  state.ratioIdx = r ? Number(r.value) : -1;
+  state.ideal = ($('input[name=ideal]:checked') || {}).value || '';
+}
+
+function showStep(n) {
+  collect();
+  step = Math.min(TOTAL, Math.max(1, n));
+  $$('[data-step]').forEach(s => { s.hidden = Number(s.dataset.step) !== step; });
+  $('#prog-label').textContent = step + ' / ' + TOTAL;
+  $$('.prog .bars i').forEach(b => b.classList.toggle('on', Number(b.dataset.bar) <= step));
+  $('#nav-prev').disabled = step === 1;
+  $('#nav-next').hidden = step === TOTAL;
+  if (step === TOTAL) renderResult();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderRatioPreview() {
+  collect();
+  const h = annualHours(state.ratioIdx);
+  $('#ratio-preview').textContent = h == null ? '' : '연간 약 ' + h.toLocaleString() + '시간을 되찾을 수 있어요 (추정)';
+}
+
+function renderResult() {
+  const h = annualHours(state.ratioIdx);
+  $('#result-hours').textContent = h == null ? '—' : h.toLocaleString();
+}
+
+function buildSummary(company) {
+  const h = annualHours(state.ratioIdx);
+  const lines = [
+    '[진단 설문]',
+    '· 역할: ' + (state.roles.join(', ') || '-') + ' / 팀 ' + (state.team || '-'),
+    '· 반복 업무: ' + (state.tasks || '-'),
+    '· 반복 업무 시간: ' + (state.weekly || '-'),
+    '· 단순반복 비율: ' + (RATIO_LABEL[state.ratioIdx] || '-'),
+    '· 연간 절약 가능(추정): ' + (h == null ? '-' : '약 ' + h.toLocaleString() + '시간'),
+    '· 되찾은 시간: ' + (state.ideal || '-'),
+  ];
+  if (company) lines.push('· 소속: ' + company);
+  return lines.join('\n');
+}
+
+// 내비게이션
+$('#nav-next').addEventListener('click', () => showStep(step + 1));
+$('#nav-prev').addEventListener('click', () => showStep(step - 1));
+document.addEventListener('change', e => {
+  if (e.target.name === 'ratio') renderRatioPreview();
+});
+
+// 초기 진행 막대·내비 상태
+$$('.prog .bars i').forEach(b => b.classList.toggle('on', Number(b.dataset.bar) <= step));
+
+// 리드 폼 제출 (연락처는 제출 시에만 필수, 미제출 이탈 허용)
+$('#lead-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.website.value) return;                       // honeypot
+  const contact = f.contact.value.trim();
+  if (!contact) { f.contact.focus(); return; }
+  collect();
+  const btn = f.querySelector('button[type=submit]');
+  btn.disabled = true;
+  btn.textContent = '보내는 중…';
+  try {
+    const res = await fetch(CONTACT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: f.name.value.trim(),
+        contact,
+        message: buildSummary(f.company.value.trim()),
+        source: 'ax-check',
+        website: '',
+      }),
+    });
+    if (!res.ok) throw new Error();
+    $('#lead-done').hidden = false;
+    f.hidden = true;
+  } catch {
+    btn.disabled = false;
+    btn.textContent = '진단 받기';
+    $('#lead-done').hidden = false;
+    $('#lead-done').style.color = 'var(--ds-err)';
+    $('#lead-done').textContent = '전송에 실패했어요. 잠시 후 다시 시도해주세요.';
+  }
+});
+</script>
+</body>
+</html>
